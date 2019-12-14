@@ -555,6 +555,11 @@ All functions
    csytrf_lwork
    zsytrf_lwork
 
+   stbtrs
+   dtbtrs
+   ctbtrs
+   ztbtrs
+
    stfsm
    dtfsm
    ctfsm
