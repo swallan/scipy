@@ -1645,6 +1645,8 @@ def test_getc2_gesc2():
         else:
             assert_array_almost_equal(desired_cplx.astype(dtype),
                                       x/scale, decimal=4)
+
+
 def generate_random_dtype_array(shape, dtype):
     # generates a random matrix of desired data type of shape
     if dtype in COMPLEX_DTYPES:
@@ -1652,14 +1654,26 @@ def generate_random_dtype_array(shape, dtype):
                 + np.random.rand(*shape)*1.0j).astype(dtype)
     return np.random.rand(*shape).astype(dtype)
 
-@pytest.mark.parametrize("dtype", DTYPES)
-@pytest.mark.parametrize("fact", ("F", "N"))
 
-def test_ptsvx(dtype,fact):
+@pytest.mark.parametrize("dtype", DTYPES)
+@pytest.mark.parametrize("fact,de_df_lambda",
+                         [("F", lambda d, e:get_lapack_funcs('pttrf',
+                                                             dtype=e.dtype)),
+                          ("N", lambda d, e: (None, None, None))])
+def test_ptsvx(dtype, fact, de_df_lambda):
+    '''
+    TODO: let's see what the actual type of rcond is so that we can test for
+    that specifcially
+
+    This tests the ?ptsvx lapack routine wrapper to solve a random system
+    Ax = b for all dtypes and input variations. Tests for: unmodified
+    input parameters, fact options, incompatible matrix shapes raise an error,
+    and singular matrices return info of illegal value.
+    '''
     np.random.seed(42)
     # set test tolerance appropriate for dtype
-    rtol = 250*np.finfo(dtype).eps
-    atol = 100*np.finfo(dtype).eps
+    rtol = 250 * np.finfo(dtype).eps
+    atol = 100 * np.finfo(dtype).eps
     # obtain routine
     ptsvx = get_lapack_funcs('ptsvx', dtype=dtype)
     # n is the length diagonal of A
@@ -1667,7 +1681,7 @@ def test_ptsvx(dtype,fact):
     # create diagonals according to size and dtype
     if dtype in REAL_DTYPES:
         # add 2 so that the matrix will be diagonally dominant
-        d = generate_random_dtype_array((n,), dtype) + 2
+        d = generate_random_dtype_array((n,), dtype=dtype) + 2
     else:
         # diagonal d should always be real.
         # for complex add 4 so it will be dominant
@@ -1677,27 +1691,36 @@ def test_ptsvx(dtype,fact):
     # form matrix A from d and e
     A = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
     # create random solution x
-    x_soln = generate_random_dtype_array((n,2), dtype)
+    x_soln = generate_random_dtype_array((n, 2), dtype=dtype)
     # now create a b based on these
     b = A @ x_soln
-    # determine if de, df, should be null or based on pttrf
-    if fact == "N":
-        de = None
-        df = None
+
+    # use lambda to determine what df, ef are
+    # (parametrized to either be null or result of ?pttrf)
+    df, ef, info = de_df_lambda(d, e)
+
+    diag_cpy = [d.copy(), e.copy(), b.copy()]
+
+    # solve using routine
+    if fact == "F":
+        x, df, ef, rcond, ferr, berr, info = ptsvx(None, None, b, fact=fact,
+                                                   df=df, ef=ef)
     else:
-        pttrf = get_lapack_funcs('pttrf', dtype=dtype)
-        df, fe, info = pttrf(d, e)
-        
-    # solve using routine 
-    x, df, ef, rcond, ferr, berr, info  = ptsvx(d, e, b, fact=fact, df=df, de=de)
+        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
+                                                   df=df, ef=ef)
+    # d, e, and b should be unmodified
+    assert_array_equal(d, diag_cpy[0])
+    assert_array_equal(e, diag_cpy[1])
+    assert_array_equal(b, diag_cpy[2])
+
     assert_(info == 0, "info should be 0 but is {}.".format(info))
     assert_array_almost_equal(x_soln, x)
-    
+
     # test that the factors from ptsvx can be recombined to make A
     L = np.diag(ef, -1) + np.diag(np.ones(n))
     D = np.diag(df)
     assert_allclose(A, L@D@(np.transpose(L)), rtol=rtol, atol=atol)
-    
+
     # assert that the outputs are of correct type or shape
     # rcond should be a scalar
     assert_(hasattr(rcond, "__len__"),
@@ -1711,22 +1734,92 @@ def test_ptsvx(dtype,fact):
 
     # test with malformatted array sizes
     with assert_raises(Exception):
-        ptsvx(d[:-1], e, b, fact=fact, df=df, de=de)
+        ptsvx(d[:-1], e, b, fact=fact, df=df, ef=ef)
     with assert_raises(Exception):
-        ptsvx(d, e[:-1], b, fact=fact, df=df, de=de)
+        ptsvx(d, e[:-1], b, fact=fact, df=df, ef=ef)
     with assert_raises(Exception):
-        ptsvx(d, e, b[:-1], fact=fact, df=df, de=de)
-        
-    # test with singular matrix
-    
+        ptsvx(d, e, b[:-1], fact=fact, df=df, ef=ef)
+
     # test with non spd matrix
-    x, df, ef, rcond, ferr, berr, info = ptsvx(d, e+2, b, fact=fact, df=df, de=de)
+    x, df, ef, rcond, ferr, berr, info = ptsvx(d, e+2, b, fact=fact, df=df,
+                                               ef=ef)
 
-    
-    # It might be cool to create an example for which the matrix is numerically - but not exactly - singular to see if we can get info==N+1
-    
-    
-    
-    
-    
+    # test with singular matrix
+    # no need to test with fact "T" since ?pttrf already tests for these.
+    if fact == "N":
+        d[0] = 0
+        # obtain new df, ef
+        df, ef, info = de_df_lambda(d, e)
+        # solve using routine
+        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
+                                                   ef=ef)
+        # test for the singular matrix.
+        assert_(d[info - 1] == 0,
+                           "?ptsvx: d[info-1] is {}, not the illegal value"
+                           .format(d[info - 1]))
 
+        # non SPD matrix
+        d = generate_random_dtype_array(n, dtype)
+        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
+                                                   ef=ef)
+        assert_(np.linalg.norm(d[info]) < 2 * np.linalg.norm(e[info]),
+                "?ptsvx: idx {} of d should < e but are: {}, {} ".format(
+                   info, np.linalg.norm(d[info]), np.linalg.norm(e[info])))
+    else:
+        # assuming that someone is using a singular factorization
+        df, ef = de_df_lambda(d, e)
+        df[0] = 0
+        ef[0] = 0
+        x, df, ef, rcond, ferr, berr, info = ptsvx(None, None, b, fact=fact,
+                                                   df=df, ef=ef)
+        # info should not be zero and should provide index of illegal value
+        assert_(d[info - 1] == 0,
+                           "?ptsvx: _d[info-1] is {}, not the illegal value"
+                           .format(d[info - 1]))
+
+
+    # It might be cool to create an example for which the matrix is
+    # numerically - but not exactly - singular to see if we can get info==N+1
+
+
+@pytest.mark.parametrize('d,e,b,x', [(np.array([4, 10, 29, 25, 5]),
+                                      np.array([-2, -6, 15, 8]),
+                                      np.array([[6, 10],
+                                                [9, 4],
+                                                [2, 9],
+                                                [14, 65],
+                                                [7, 23]]),
+                                      np.array([[2.5, 2]],
+                                               [2, -1],
+                                               [1, -3],
+                                               [-1, 6],
+                                               [3, -5])),
+                                     (np.array([16, 41, 46, 21]),
+                                      np.array([16 + 16j, 18 - 9j, 1 - 4j]),
+                                      np.array([[64 - 16j, -16 - 32j],
+                                                [93 - 62j, 61 - 66j],
+                                                [78 - 80j, 71 - 74j],
+                                                [14 - 27j, 35 + 15j]]),
+                                      np.array([[2 + 1j, -3 - 2j]],
+                                               [1 + 1j, 1 + 1j],
+                                               [1 - 2j, 1 - 2j],
+                                               [1 - 1j, 2 - 1j]))])
+def test_ptsvx_NAG(d, e, b, x):
+    '''
+    TODO: On nag manual there are berr vals that are exactly zero.
+        - why would it be zero, shouldn't it not be?
+        - test idea to just see if nearby zero.
+
+    Tests real and complex NAG examples: f07jbf, f07jpf
+    https://www.nag.com/numeric/fl/nagdoc_fl26.2/html/f07/f07jbf.html
+    https://www.nag.com/numeric/fl/nagdoc_fl26.2/html/f07/f07jpf.html
+    '''
+    # test that it is close to zero, ask kai about why it is exactly zero
+    # (not supposed to be exactly zero, or at least shouldnt be)
+
+    # obtain routine with correct type based on e.dtype
+    ptsvx = get_lapack_funcs('ptsvx', dtype=e.dtype)
+    # solve using routine
+    x_ptsvx, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact="N")
+    # determine ptsvx's solution and x are the same.
+    assert_array_almost_equal(x, x_ptsvx)
