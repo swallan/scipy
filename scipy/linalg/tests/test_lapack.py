@@ -1656,11 +1656,11 @@ def generate_random_dtype_array(shape, dtype):
 
 
 @pytest.mark.parametrize("dtype", DTYPES)
-@pytest.mark.parametrize("fact,de_df_lambda",
+@pytest.mark.parametrize("fact,df_de_lambda",
                          [("F", lambda d, e:get_lapack_funcs('pttrf',
                                                              dtype=e.dtype)),
                           ("N", lambda d, e: (None, None, None))])
-def test_ptsvx(dtype, fact, de_df_lambda):
+def test_ptsvx(dtype, fact, df_de_lambda):
     '''
     TODO: let's see what the actual type of rcond is so that we can test for
     that specifcially
@@ -1683,11 +1683,11 @@ def test_ptsvx(dtype, fact, de_df_lambda):
         # add 2 so that the matrix will be diagonally dominant
         d = generate_random_dtype_array((n,), dtype=dtype) + 2
     else:
-        # diagonal d should always be real.
+        # Per lapack documentation, diagonal d should always be real.
         # for complex add 4 so it will be dominant
         d = generate_random_dtype_array((n,), DTYPES[1]) + 4
     # diagonal e may be real or complex.
-    e = generate_random_dtype_array(n-1, dtype)
+    e = generate_random_dtype_array((n-1,), dtype)
     # form matrix A from d and e
     A = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
     # create random solution x
@@ -1697,17 +1697,13 @@ def test_ptsvx(dtype, fact, de_df_lambda):
 
     # use lambda to determine what df, ef are
     # (parametrized to either be null or result of ?pttrf)
-    df, ef, info = de_df_lambda(d, e)
+    df, ef, info = df_de_lambda(d, e)
 
     diag_cpy = [d.copy(), e.copy(), b.copy()]
 
     # solve using routine
-    if fact == "F":
-        x, df, ef, rcond, ferr, berr, info = ptsvx(None, None, b, fact=fact,
-                                                   df=df, ef=ef)
-    else:
-        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
-                                                   df=df, ef=ef)
+    x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
+                                               df=df, ef=ef)
     # d, e, and b should be unmodified
     assert_array_equal(d, diag_cpy[0])
     assert_array_equal(e, diag_cpy[1])
@@ -1733,13 +1729,13 @@ def test_ptsvx(dtype, fact, de_df_lambda):
             .format(berr.shape, n))
 
     # test with malformatted array sizes
-    with assert_raises(Exception):
+    with assert_raises(ValueError):
         ptsvx(d[:-1], e, b, fact=fact, df=df, ef=ef)
-    with assert_raises(Exception):
+    with assert_raises(ValueError):
         ptsvx(d, e[:-1], b, fact=fact, df=df, ef=ef)
-    with assert_raises(Exception):
+    with assert_raises(ValueError):
         ptsvx(d, e, b[:-1], fact=fact, df=df, ef=ef)
-
+    '''come back to later if doesnt work to check for nonzero info'''
     # test with non spd matrix
     x, df, ef, rcond, ferr, berr, info = ptsvx(d, e+2, b, fact=fact, df=df,
                                                ef=ef)
@@ -1749,14 +1745,14 @@ def test_ptsvx(dtype, fact, de_df_lambda):
     if fact == "N":
         d[0] = 0
         # obtain new df, ef
-        df, ef, info = de_df_lambda(d, e)
+        df, ef, info = df_de_lambda(d, e)
         # solve using routine
         x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
                                                    ef=ef)
         # test for the singular matrix.
         assert_(d[info - 1] == 0,
-                           "?ptsvx: d[info-1] is {}, not the illegal value"
-                           .format(d[info - 1]))
+                "?ptsvx: d[info-1] is {}, not the illegal value"
+                .format(d[info - 1]))
 
         # non SPD matrix
         d = generate_random_dtype_array(n, dtype)
@@ -1767,16 +1763,15 @@ def test_ptsvx(dtype, fact, de_df_lambda):
                    info, np.linalg.norm(d[info]), np.linalg.norm(e[info])))
     else:
         # assuming that someone is using a singular factorization
-        df, ef = de_df_lambda(d, e)
+        df, ef = df_de_lambda(d, e)
         df[0] = 0
         ef[0] = 0
         x, df, ef, rcond, ferr, berr, info = ptsvx(None, None, b, fact=fact,
                                                    df=df, ef=ef)
         # info should not be zero and should provide index of illegal value
         assert_(d[info - 1] == 0,
-                           "?ptsvx: _d[info-1] is {}, not the illegal value"
-                           .format(d[info - 1]))
-
+                "?ptsvx: _d[info-1] is {}, not the illegal value"
+                .format(d[info - 1]))
 
     # It might be cool to create an example for which the matrix is
     # numerically - but not exactly - singular to see if we can get info==N+1
