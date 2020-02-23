@@ -481,6 +481,11 @@ All functions
    cptsv
    zptsv
 
+   spteqr
+   dpteqr
+   cpteqr
+   zpteqr
+
    crot
    zrot
 
