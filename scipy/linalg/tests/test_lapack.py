@@ -24,6 +24,7 @@ from numpy.random import rand, randint, seed
 from scipy.linalg import _flapack as flapack, lapack
 from scipy.linalg import inv, svd, cholesky, solve, ldl, norm, eigh, eig
 from scipy.linalg.lapack import _compute_lwork
+from scipy.linalg import qr
 
 try:
     from scipy.linalg import _clapack as clapack
@@ -772,7 +773,7 @@ class TestHetrd(object):
                     - tau[i] * np.outer(v, np.conj(v))
                 Q = np.dot(H, Q)
 
-            # Make matrix fully Hermetian
+            # Make matrix fully Hermitian
             i_lower = np.tril_indices(n, -1)
             A[i_lower] = np.conj(A.T[i_lower])
 
@@ -878,7 +879,7 @@ def test_sygst():
         B = (B + B.T)/2 + 2 * np.eye(n, dtype=dtype)
 
         # Perform eig (sygvd)
-        _, eig_gvd, info = sygvd(A, B)
+        eig_gvd, _, info = sygvd(A, B)
         assert_(info == 0)
 
         # Convert to std problem potrf
@@ -909,7 +910,7 @@ def test_hegst():
         B = (B + B.conj().T)/2 + 2 * np.eye(n, dtype=dtype)
 
         # Perform eig (hegvd)
-        _, eig_gvd, info = hegvd(A, B)
+        eig_gvd, _, info = hegvd(A, B)
         assert_(info == 0)
 
         # Convert to std problem potrf
@@ -1656,6 +1657,15 @@ def test_getc2_gesc2():
                                       x/scale, decimal=4)
 
 
+@pytest.mark.parametrize('dtype', DTYPES)
+@pytest.mark.parametrize('shape', [(3, 7), (7, 3), (2**18, 2**18)])
+def test_geqrfp_lwork(dtype, shape):
+    geqrfp_lwork = get_lapack_funcs(('geqrfp_lwork'), dtype=dtype)
+    m, n = shape
+    lwork, info = geqrfp_lwork(m=m, n=n)
+    assert_equal(info, 0)
+
+
 def generate_random_dtype_array(shape, dtype):
     # generates a random matrix of desired data type of shape
     if dtype in COMPLEX_DTYPES:
@@ -1759,3 +1769,105 @@ def test_pteqr_NAG(compz, A, d, e, d_expect, z_expect):
     _d, _e, _z, work, info = pteqr(d, e, compz=compz)
     assert_allclose(_d, d_expect, atol=atol)
     assert_allclose(_z, z_expect, atol=atol)
+@pytest.mark.parametrize('dtype', DTYPES)
+@pytest.mark.parametrize('matrix_size', [(3, 4), (7, 6), (6, 6)])
+def test_geqrfp(dtype, matrix_size):
+    # Tests for all dytpes, tall, wide, and square matrices.
+    # Using the routine with random matrix A, Q and R are obtained and then
+    # tested such that R is upper triangular and non-negative on the diagonal,
+    # and Q is an orthagonal matrix. Verifies that A=Q@R. It also
+    # tests against a matrix that for which the  linalg.qr method returns
+    # negative diagonals, and for error messaging.
+
+    # set test tolerance appropriate for dtype
+    np.random.seed(42)
+    rtol = 250*np.finfo(dtype).eps
+    atol = 100*np.finfo(dtype).eps
+    # get appropriate ?geqrfp for dtype
+    geqrfp = get_lapack_funcs(('geqrfp'), dtype=dtype)
+    gqr = get_lapack_funcs(("orgqr"), dtype=dtype)
+
+    m, n = matrix_size
+
+    # create random matrix of dimentions m x n
+    A = generate_random_dtype_array((m, n), dtype=dtype)
+    # create qr matrix using geqrfp
+    qr_A, tau, info = geqrfp(A)
+
+    # obtain r from the upper triangular area
+    r = np.triu(qr_A)
+
+    # obtain q from the orgqr lapack routine
+    # based on linalg.qr's extraction strategy of q with orgqr
+
+    if m > n:
+        # this adds an extra column to the end of qr_A
+        # let qqr be an empty m x m matrix
+        qqr = np.zeros((m, m), dtype=dtype)
+        # set first n columns of qqr to qr_A
+        qqr[:, :n] = qr_A
+        # determine q from this qqr
+        # note that m is a sufficient for lwork based on LAPACK documentation
+        q = gqr(qqr, tau=tau, lwork=m)[0]
+    else:
+        q = gqr(qr_A[:, :m], tau=tau, lwork=m)[0]
+
+    # test that q and r still make A
+    assert_allclose(q@r, A, rtol=rtol)
+    # ensure that q is orthogonal (that q @ transposed q is the identity)
+    assert_allclose(np.eye(q.shape[0]), q@(q.conj().T), rtol=rtol,
+                    atol=atol)
+    # ensure r is upper tri by comparing original r to r as upper triangular
+    assert_allclose(r, np.triu(r), rtol=rtol)
+    # make sure diagonals of r are positive for this random solution
+    assert_(np.all(np.diag(r) > np.zeros(len(np.diag(r)))))
+    # ensure that info is zero for this success
+    assert_(info == 0)
+
+    # test that this routine gives r diagonals that are positive for a
+    # matrix that returns negatives in the diagonal with scipy.linalg.rq
+    A_negative = generate_random_dtype_array((n, m), dtype=dtype) * -1
+    r_rq_neg, q_rq_neg = qr(A_negative)
+    rq_A_neg, tau_neg, info_neg = geqrfp(A_negative)
+    # assert that any of the entries on the diagonal from linalg.qr
+    #   are negative and that all of geqrfp are positive.
+    assert_(np.any(np.diag(r_rq_neg) < 0) and
+            np.all(np.diag(r) > 0))
+
+
+def test_geqrfp_errors_with_empty_array():
+    # check that empty array raises good error message
+    A_empty = np.array([])
+    geqrfp = get_lapack_funcs('geqrfp', dtype=A_empty.dtype)
+    assert_raises(Exception, geqrfp, A_empty)
+
+
+@pytest.mark.parametrize("driver", ['ev', 'evd', 'evr', 'evx'])
+@pytest.mark.parametrize("pfx", ['sy', 'he'])
+def test_standard_eigh_lworks(pfx, driver):
+    n = 1200  # Some sufficiently big arbitrary number
+    dtype = REAL_DTYPES if pfx == 'sy' else COMPLEX_DTYPES
+    sc_dlw = get_lapack_funcs(pfx+driver+'_lwork', dtype=dtype[0])
+    dz_dlw = get_lapack_funcs(pfx+driver+'_lwork', dtype=dtype[1])
+    try:
+        _compute_lwork(sc_dlw, n, lower=1)
+        _compute_lwork(dz_dlw, n, lower=1)
+    except Exception as e:
+        pytest.fail("{}_lwork raised unexpected exception: {}"
+                    "".format(pfx+driver, e))
+
+
+@pytest.mark.parametrize("driver", ['gv', 'gvx'])
+@pytest.mark.parametrize("pfx", ['sy', 'he'])
+def test_generalized_eigh_lworks(pfx, driver):
+    n = 1200  # Some sufficiently big arbitrary number
+    dtype = REAL_DTYPES if pfx == 'sy' else COMPLEX_DTYPES
+    sc_dlw = get_lapack_funcs(pfx+driver+'_lwork', dtype=dtype[0])
+    dz_dlw = get_lapack_funcs(pfx+driver+'_lwork', dtype=dtype[1])
+    # Shouldn't raise any exceptions
+    try:
+        _compute_lwork(sc_dlw, n, uplo="L")
+        _compute_lwork(dz_dlw, n, uplo="L")
+    except Exception as e:
+        pytest.fail("{}_lwork raised unexpected exception: {}"
+                    "".format(pfx+driver, e))
