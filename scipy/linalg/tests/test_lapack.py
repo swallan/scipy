@@ -1713,37 +1713,37 @@ def test_pteqr(dtype, realtype, compz):
         e = generate_random_dtype_array((n-1,), realtype)
 
         # make SPD
-        if dtype in REAL_DTYPES:
-            d = d + 2
-        else:
-            d = d + 4
-        z = None
+        d = d + 4
+        z = generate_random_dtype_array((n, n), dtype)
         A = np.diag(d) + np.diag(e, 1) + np.diag(e, -1)
+        z = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
 
-    d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d, e, z=z, compz=compz)
+    d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d=d, e=e, z=z, compz=compz)
     assert_equal(info, 0, "info = {}, should be 0.".format(info))
-    w = eig(A)
+
     # compare the routine's eigenvalues with scipy.linalg.eig's.
-    assert_allclose(w, d_pteqr, rtol=rtol, atol=atol)
+    assert_allclose(np.sort(eig(A)[0]), np.sort(d_pteqr), rtol=rtol, atol=atol)
 
     if compz == "I" or compz == "V":
         # verify z_pteqr as orthogonal
-        assert_allclose(z_pteqr @ z_pteqr.T, np.identity(n), rtol=rtol,
-                        atol=atol)
+        assert_allclose(z_pteqr @ np.conj(z_pteqr).T, np.identity(n),
+                        rtol=rtol, atol=atol)
         # verify that z_pteqr recombines to A
-        assert_allclose(z_pteqr @ np.diag(d_pteqr) @ z_pteqr.T, A, rtol=rtol,
-                        atol=atol)
+        assert_allclose(z_pteqr @ np.diag(d_pteqr) @ np.conj(z_pteqr).T,
+                        A, rtol=rtol, atol=atol)
+
     # test with non-spd matrix
-    d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d - 2, e, z=z, compz=compz)
-    assert_equal(info, 1, "pteqr: info = {}, should be 1".format(info))
+    d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d - 4, e, z=z, compz=compz)
+    assert info > 0
     # test with incorrect/incompatible array sizes
-    d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d[:-1], e, z=z, compz=compz)
-    assert_equal(info, 1, "pteqr: info = {}, should be 1".format(info))
+    assert_raises(ValueError, pteqr, d[:-1], e, z=z, compz=compz)
+    assert_raises(ValueError, pteqr, d, e[:-1], z=z, compz=compz)
+    assert_raises(ValueError, pteqr, d[:-1], e, z=z[:-1], compz=compz)
     # test with singular matrix
     d[0] = 0
     e[0] = 0
     d_pteqr, e_pteqr, z_pteqr, work, info = pteqr(d, e, z=z, compz=compz)
-    assert_equal(info, 1, "pteqr: info = {}, should be 1".format(info))
+    assert info > 0
 
 
 @pytest.mark.parametrize("compz,d,e,d_expect,z_expect",
@@ -1756,7 +1756,7 @@ def test_pteqr(dtype, realtype, compz):
                                      [-0.1082, 0.6071, 0.4594, -0.6393],
                                      [-0.0081, 0.2432, 0.6625, 0.7084]])),
                           ])
-def test_pteqr_NAG(compz, A, d, e, d_expect, z_expect):
+def test_pteqr_NAG(compz, d, e, d_expect, z_expect):
     '''
     Implements real (f08jgf) example from NAG manual.
     https://www.nag.com/numeric/fl/nagdoc_latest/html/f08/f08jgf.html
@@ -1766,9 +1766,12 @@ def test_pteqr_NAG(compz, A, d, e, d_expect, z_expect):
     atol = 1e-4
     pteqr = get_lapack_funcs(('pteqr'), dtype=d.dtype)
 
-    _d, _e, _z, work, info = pteqr(d, e, compz=compz)
+    z = np.diag(d) + np.diag(e, 1) + np.diag(e, -1)
+    _d, _e, _z, work, info = pteqr(d=d, e=e, z=z, compz=compz)
     assert_allclose(_d, d_expect, atol=atol)
     assert_allclose(_z, z_expect, atol=atol)
+
+
 @pytest.mark.parametrize('dtype', DTYPES)
 @pytest.mark.parametrize('matrix_size', [(3, 4), (7, 6), (6, 6)])
 def test_geqrfp(dtype, matrix_size):
