@@ -1794,12 +1794,7 @@ def test_getc2_gesc2():
                                       x/scale, decimal=4)
 
 
-def generate_random_dtype_array(shape, dtype):
-    # generates a random matrix of desired data type of shape
-    if dtype in COMPLEX_DTYPES:
-        return (np.random.rand(*shape)
-                + np.random.rand(*shape)*1.0j).astype(dtype)
-    return np.random.rand(*shape).astype(dtype)
+
 
 
 @pytest.mark.parametrize("dtype", DTYPES)
@@ -1847,7 +1842,7 @@ def test_ptsvx(dtype, fact, df_de_lambda):
     diag_cpy = [d.copy(), e.copy(), b.copy()]
 
     # solve using routine
-    x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
+    df, ef, x, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
                                                df=df, ef=ef)
     # d, e, and b should be unmodified
     assert_array_equal(d, diag_cpy[0])
@@ -1882,7 +1877,7 @@ def test_ptsvx(dtype, fact, df_de_lambda):
         ptsvx(d, e, b[:-1], fact=fact, df=df, ef=ef)
     '''come back to later if doesnt work to check for nonzero info'''
     # test with non spd matrix
-    x, df, ef, rcond, ferr, berr, info = ptsvx(d, e+2, b, fact=fact, df=df,
+    df, ef, x, rcond, ferr, berr, info = ptsvx(d, e+2, b, fact=fact, df=df,
                                                ef=ef)
 
     # test with singular matrix
@@ -1892,7 +1887,7 @@ def test_ptsvx(dtype, fact, df_de_lambda):
         # obtain new df, ef
         df, ef, info = df_de_lambda(d, e)
         # solve using routine
-        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
+        df, ef, x, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
                                                    ef=ef)
         # test for the singular matrix.
         assert_(d[info - 1] == 0,
@@ -1901,7 +1896,7 @@ def test_ptsvx(dtype, fact, df_de_lambda):
 
         # non SPD matrix
         d = generate_random_dtype_array(n, dtype)
-        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
+        df, ef, x, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact, df=df,
                                                    ef=ef)
         assert_(np.linalg.norm(d[info]) < 2 * np.linalg.norm(e[info]),
                 "?ptsvx: idx {} of d should < e but are: {}, {} ".format(
@@ -1911,7 +1906,7 @@ def test_ptsvx(dtype, fact, df_de_lambda):
         df, ef = df_de_lambda(d, e)
         df[0] = 0
         ef[0] = 0
-        x, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
+        df, ef, x, rcond, ferr, berr, info = ptsvx(d, e, b, fact=fact,
                                                    df=df, ef=ef)
         # info should not be zero and should provide index of illegal value
         assert_(d[info - 1] == 0,
@@ -1954,9 +1949,11 @@ def test_ptsvx_NAG(d, e, b, x):
     # obtain routine with correct type based on e.dtype
     ptsvx = get_lapack_funcs('ptsvx', dtype=e.dtype)
     # solve using routine
-    x_ptsvx, df, ef, rcond, ferr, berr, info = ptsvx(d, e, b, fact="N")
+    df, ef, x_ptsvx, rcond, ferr, berr, info = ptsvx(d, e, b, fact="N")
     # determine ptsvx's solution and x are the same.
     assert_array_almost_equal(x, x_ptsvx)
+
+
 @pytest.mark.parametrize("dtype", DTYPES)
 def test_gttrf_gttrs(dtype):
     # The test uses ?gttrf and ?gttrs to solve a random system for each dtype,
