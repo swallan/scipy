@@ -2543,6 +2543,27 @@ class genpareto_gen(rv_continuous):
     def _entropy(self, c):
         return 1. + c
 
+    def fit(self, data, *args, **kwds):
+        # override fit method to use maximum likelihood equations 
+        floc = kwds.get('floc', None)
+        fscale = kwds.get('fscale', None)
+
+        if floc is not None and fscale is not None:
+            raise ValueError("All parameters fixed. There is nothing to "
+                             "optimize.")
+
+        # according to Evan's, location is indicated by the data's minimum.
+        location = data.min()
+        # shape is indicated by the following equation
+        shape = 0
+        for i in range(len(data)):
+            shape += np.log10(data[i] / location)
+        shape = shape / len(data)
+        shape = 1 / shape
+        print(shape, location)
+
+        return super(fit(data, f0=shape, floc=location))
+
 
 genpareto = genpareto_gen(a=0.0, name='genpareto')
 
@@ -4171,7 +4192,63 @@ class laplace_gen(rv_continuous):
 
     def _entropy(self):
         return np.log(2)+1
+    
+    def fit(self, data, **kwds):
+        """
+        Maximum likelihood estimate for the location and scale parameters.
 
+        Exact forumulas are used to calculate the loc and scale, unless they
+        are provided in floc or fscale.
+
+        Parameters
+        ----------
+        data : array_like
+            Data to use in calculating the maximum likelihood estimate.
+        floc : float, optional
+            Hold the location parameter fixed to the specified value.
+        fscale : float, optional
+            Hold the scale parameter fixed to the specified value.
+
+        Returns
+        -------
+        loc, scale : float
+            Maximum likelihood estimates for the location and scale.
+            - loc is the median of the data 
+            - scale is given by the equation \frac{1}{n}\sum_{i=0}^{n}{|x_i - loc|}
+            source: Statistical Distributions, 3rd Edition. Evans, Hastings, and Peacock (2000),
+                (pg. 124)
+
+        Notes
+        -----
+        An error is raised if floc is given but is not the median.
+        """
+        floc = kwds.pop('floc', None)
+        fscale = kwds.pop('fscale', None)
+        
+        if floc is not None and fscale is not None:
+            # This check is for consistency with `rv_continuous.fit`.
+            # Without this check, this function would just return the
+            # parameters that were given.
+            raise ValueError("All parameters fixed. There is nothing to "
+                             "optimize.")
+        
+        data = np.asarray(data)
+        
+        if floc is None:
+            loc = np.median(data)
+        else:
+            # should we check here to see if floc is not the median?
+            loc = floc
+            
+        if fscale is None:
+            b = 0
+            n = len(data)
+            for i in range(n):
+                b += np.abs(data[i] - loc)
+            scale = b/n
+        else:
+            scale = fscale
+        return loc, scale
 
 laplace = laplace_gen(name='laplace')
 
@@ -6314,6 +6391,29 @@ class powerlaw_gen(rv_continuous):
     def _entropy(self, a):
         return 1 - 1.0/a - np.log(a)
 
+    def flit(self, data, *args, **kwds):
+        if len(args) > 0:
+            raise TypeError("Too many arguments.")
+
+        floc = kwds.pop('floc', None)
+        fscale = kwds.pop('fscale', None)
+
+        if floc is not None and fscale is not None:
+            # This check is for consistency with `rv_continuous.fit`.
+            raise ValueError("All parameters fixed. There is nothing to "
+                             "optimize.")
+        if fscale is not None and fscale != 1:
+            raise ValueError("Scale parameter of power function distribution must be 1.")
+
+        # location parameter is given by:
+        loc = 0
+        for j in range(len(data)):
+            loc += np.log(data[j])
+        loc = len(data) / loc
+
+        return loc, 1
+
+
 
 powerlaw = powerlaw_gen(a=0.0, b=1.0, name="powerlaw")
 
@@ -6516,6 +6616,40 @@ class rayleigh_gen(rv_continuous):
 
     def _entropy(self):
         return _EULER/2.0 + 1 - 0.5*np.log(2)
+
+    def fit(self, data, *args, **kwds):
+        """
+        Maxmimum likelihood estimation for Rayleigh Distribution of the scale parameter.
+
+        Parameters
+        ----------
+        data : array_like
+            Data to use in calculating the maximum likelihood estimate.
+        
+        Returns
+        -------
+        scale : float
+            Maximum likelihood estimate for the scale.
+
+        """
+        if len(args) > 0:
+            raise TypeError("Too many arguments.")
+        fscale = kwds.pop('fscale', None)
+
+        if fscale is not None:
+            raise ValueError("Scale already fixed. There is nothing to "
+                             "optimize.")
+        
+        data = np.asarray(data)
+        scale = 0
+        n = len(data)
+        for i in range(n):
+            scale += (data[i])**2
+
+        return (scale/(2*n))**.5
+
+
+
 
 
 rayleigh = rayleigh_gen(a=0.0, name="rayleigh")
@@ -7665,6 +7799,69 @@ class wald_gen(invgauss_gen):
 
     def _stats(self):
         return 1.0, 1.0, 3.0, 15.0
+
+    def ft(self, data, *args, **kwds):
+        """
+        Maximum likelihood estimate for the location and scale parameters.
+
+        Exact forumulas are used to calculate the loc and scale, unless they
+        are provided in floc or fscale.
+
+        Parameters
+        ----------
+        data : array_like
+            Data to use in calculating the maximum likelihood estimate.
+        floc : float, optional
+            Hold the location parameter fixed to the specified value.
+        fscale : float, optional
+            Hold the scale parameter fixed to the specified value.
+
+        Returns
+        -------
+        loc, scale : float
+            Maximum likelihood estimates for the location and scale.
+            - loc is the mean of the data, which should be 1.
+            - scale is given by the equation {}
+
+        Notes
+        -----
+        
+        """
+        if len(args) > 0:
+            raise TypeError("Too many arguments.")
+
+        floc = kwds.pop('floc', None)
+        fscale = kwds.pop('fscale', None)
+
+        if floc is not None and fscale is not None:
+            # This check is for consistency with `rv_continuous.fit`.
+            raise ValueError("All parameters fixed. There is nothing to "
+                             "optimize.")
+        
+        data = np.asarray(data)
+
+        if not np.isfinite(data).all():
+            raise RuntimeError("The data contains non-finite values.")
+
+        if floc is None:
+            loc = np.mean(data)
+        else:
+            loc = floc
+        
+        if fscale is None:
+            scale = 0
+            n = len(data)
+
+            for i in range(n):
+                scale += (data[i]**-1 - loc**-1)
+
+            scale = n / scale
+
+        else:
+            scale = fscale
+
+        return scale, loc
+
 
 
 wald = wald_gen(a=0.0, name="wald")
