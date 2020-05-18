@@ -4789,7 +4789,7 @@ class logistic_gen(rv_continuous):
 
     """
     
-    def fit(self){
+    def fit(self):
         def equations(input, data):
             a, b = input
             n = len(data)
@@ -4801,7 +4801,7 @@ class logistic_gen(rv_continuous):
             return (eq1, eq2)
         return optimize.fsolve(equations, self._fitstart(data), args=(np.ravel(data),))
 
-    }
+    
     def _rvs(self, size=None, random_state=None):
         return random_state.logistic(size=size)
 
