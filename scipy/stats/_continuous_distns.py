@@ -4789,17 +4789,48 @@ class logistic_gen(rv_continuous):
 
     """
     
-    def fit(self):
-        def equations(input, data):
-            a, b = input
-            n = len(data)
-            eq1 = (np.sum(np.exp((data - a) / b) /
-                        (1 + np.exp((data - a) / b))) / (n/2)) - 1
-            eq2 = (np.sum(((data - a) / b) *
-                        ((np.exp((data - a) / b) - 1) /
-                        np.exp((data - a) / b) + 1)) / n) -1
-            return (eq1, eq2)
-        return optimize.fsolve(equations, self._fitstart(data), args=(np.ravel(data),))
+    def fit(self, data, *args, **kwds):
+        """
+        Parameters
+        ----------
+        data : array_like
+            Data to use in calculating the maximum likelihood estimate.
+
+        Returns
+        -------
+        loc, scale: float
+            Maximum likelihood estimates for the location and scale parameters.
+
+        Notes
+        -----
+        The maximum likelihood estimates for location and scale for the 
+        can be solved via a system of simultanious equations. 
+        """
+        def _reduce_func(x0, ll, args, kwds):
+            
+            def func(input, data):
+                a, b = input
+                n = len(data)
+                # this is used 3 times, calculate only once
+                exp = np.exp((data-a)/b)
+                
+                eq_1 = (np.sum(exp / (1 + exp))) - n/2
+
+                eq_2 = np.sum(((data - a) / b) * ((exp - 1) / (exp + 1))) - n
+                '''
+                # raw equations seem to be slow
+                eq_1 = np.sum(np.exp((data - a)/b) /
+                              (1 + np.exp((data - a) / b))) - n/2
+                eq_2 = np.sum(((data - a) / b) *
+                              ((np.exp((data-a) / b) - 1) /
+                               (np.exp((data - a) / b) + 1))) - n
+                '''
+                return np.abs(eq_1) + np.abs(eq_2)
+            
+            return x0, func, None
+        
+        return super(logistic_gen, self).fit(data, _reduce_func=_reduce_func)
+    
 
     
     def _rvs(self, size=None, random_state=None):
