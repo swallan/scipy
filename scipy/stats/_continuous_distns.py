@@ -4789,51 +4789,75 @@ class logistic_gen(rv_continuous):
 
     """
     
+    
     def fit(self, data, *args, **kwds):
-        """
-        Parameters
-        ----------
-        data : array_like
-            Data to use in calculating the maximum likelihood estimate.
+        def f(vals, data, *args, **kwds):
+            a, b = vals
+            n = len(data)
 
-        Returns
-        -------
-        loc, scale: float
-            Maximum likelihood estimates for the location and scale parameters.
+            x1 = np.sum(np.exp((data - a)/b) /
+                          (1 + np.exp((data - a) / b))) - n/2
+            x2 = np.sum(((data - a) / b) *
+                          ((np.exp((data-a) / b) - 1) /
+                           (np.exp((data - a) / b) + 1))) - n
 
-        Notes
-        -----
-        The maximum likelihood estimates for location and scale for the 
-        can be solved via a system of simultanious equations. 
-        """
-        def _reduce_func(x0, ll, args, kwds):
-            
-            def func(input, data):
-                a, b = input
-                n = len(data)
-                # this is used 3 times, calculate only once
-                exp = np.exp((data-a)/b)
-                
-                eq_1 = (np.sum(exp / (1 + exp))) - n/2
-
-                eq_2 = np.sum(((data - a) / b) * ((exp - 1) / (exp + 1))) - n
-                '''
-                # raw equations seem to be slow
-                eq_1 = np.sum(np.exp((data - a)/b) /
-                              (1 + np.exp((data - a) / b))) - n/2
-                eq_2 = np.sum(((data - a) / b) *
-                              ((np.exp((data-a) / b) - 1) /
-                               (np.exp((data - a) / b) + 1))) - n
-                '''
-                return np.abs(eq_1) + np.abs(eq_2)
-            
-            return x0, func, None
+            return x1, x2
         
-        return super(logistic_gen, self).fit(data, _reduce_func=_reduce_func)
-    
+        args_cpy = args
+        kwds_cpy = kwds.copy()
+        args = self._fitstart(data)
+        args = list(args)
+        Nargs = len(args)
+        fixedn = []
+        names = ['f%d' % n for n in range(Nargs - 2)] + ['floc', 'fscale']
+        x0 = []
+        for n, key in enumerate(names):
+            if key in kwds:
+                fixedn.append(n)
+                args[n] = kwds.pop(key)
+            else:
+                x0.append(args[n])
 
-    
+        if len(fixedn) == 0:
+            print('zero')
+            func = f
+            restore = None
+        else:
+            if len(fixedn) == Nargs:
+                raise ValueError(
+                    "All parameters fixed. There is nothing to optimize.")
+
+            def restore(args, theta):
+                # Replace with theta for all numbers not in fixedn
+                # This allows the non-fixed values to vary, but
+                #  we still call func with all parameters.
+                i = 0
+                for n in range(Nargs):
+                    if n not in fixedn:
+                        args[n] = theta[i]
+                        i += 1
+                return args
+            print(fixedn[0])
+            def func(theta, x):
+                newtheta = restore(args[:], theta)
+                # [fixedn] works here since it will always be 1 var.
+                
+                return f(newtheta, x)[fixedn[0]]
+        def _reduce_func(x0, *args, **kwds):            
+            return x0, func, restore
+
+        def root(func, x0, *args, **kwds):
+            #print(x0)
+            data = kwds['args'][0]
+            soln = optimize.root(func, x0, args=(data,))
+            return soln.x
+        
+        return super(logistic_gen, self).fit(data, _reduce_func=_reduce_func,
+                                             optimizer=root, *args_cpy,
+                                             **kwds_cpy)
+
     def _rvs(self, size=None, random_state=None):
+        
         return random_state.logistic(size=size)
 
     def _pdf(self, x):
