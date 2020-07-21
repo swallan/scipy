@@ -6123,6 +6123,13 @@ class pareto_gen(rv_continuous):
     def _entropy(self, c):
         return 1 + 1.0/c - np.log(c)
 
+    # override starting point for fit (shape arguments + loc + scale)
+    def _fitstart(self, data, args=None):
+        if args is None:
+            # if no shape guess, use MLE w/ `floc=0` as guess
+            args = (1/((1/len(data)) * np.sum(np.log(data/data.min()))),) 
+        return args + self._fit_loc_scale_support(data, *args)
+
 
 pareto = pareto_gen(a=1.0, name="pareto")
 
