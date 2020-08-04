@@ -23,8 +23,8 @@ class TestSomersD(object):
         # Cross-check with result from SAS FREQ:
         expected = (0.000000000000000, 1.000000000000000)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0])
-        assert_allclose(res.pvalue, expected[1])
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # case without ties, con-dis equal zero
         x = [0, 5, 2, 1, 3, 6, 4, 7, 8]
@@ -76,22 +76,23 @@ class TestSomersD(object):
         # swap a couple values and a couple more
         x = np.arange(10)
         y = np.array([9, 7, 8, 6, 5, 3, 4, 2, 1, 0])
+        # Cross-check with result from SAS FREQ:
         expected = (-0.9111111111111111, 0.000000000000000)
         res = stats.somersd(x, y)
         assert_allclose(res.statistic, expected[0], atol=1e-15)
         assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # with some ties
-        # Cross-check with result from SAS FREQ:
         x1 = [12, 2, 1, 12, 2]
         x2 = [1, 4, 7, 1, 0]
+        # Cross-check with result from SAS FREQ:
         expected = (-0.500000000000000, 0.304901788178780)
         res = stats.somersd(x1, x2)
         assert_allclose(res.statistic, expected[0], atol=1e-15)
         assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # with only ties in one or both inputs
-        # SAS will not produce an output for this:
+        # SAS will not produce an output for these:
         '''
         NOTE: No statistics are computed for x * y because x has fewer than 2 nonmissing levels.
         WARNING: No OUTPUT data set is produced for this table because a row or column variable has fewer
@@ -101,29 +102,14 @@ class TestSomersD(object):
         assert_allclose(res.statistic, np.nan)
         assert_allclose(res.pvalue, np.nan)
 
-        '''
-        NOTE: No statistics are computed for x * y because y has fewer than 2 nonmissing levels.
-        WARNING: No OUTPUT data set is produced for this table because a row or column variable has fewer
-            than 2 nonmissing levels and no statistics are computed.
-        '''
         res = stats.somersd([2, 0, 2], [2, 2, 2])
         assert_allclose(res.statistic, np.nan)
         assert_allclose(res.pvalue, np.nan)
 
-        '''
-        NOTE: No statistics are computed for x * y because x has fewer than 2 nonmissing levels.
-        WARNING: No OUTPUT data set is produced for this table because a row or column variable has fewer
-            than 2 nonmissing levels and no statistics are computed.
-        '''
         res = stats.somersd([2, 2, 2], [2, 0, 2])
         assert_allclose(res.statistic, np.nan)
         assert_allclose(res.pvalue, np.nan)
 
-        '''
-        NOTE: No statistics are computed for x * y because x has fewer than 2 nonmissing levels.
-        WARNING: No OUTPUT data set is produced for this table because a row or column variable has fewer
-            than 2 nonmissing levels and no statistics are computed.
-        '''
         res = stats.somersd([0], [0])
         assert_allclose(res.statistic, np.nan)
         assert_allclose(res.pvalue, np.nan)
