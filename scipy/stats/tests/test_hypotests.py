@@ -206,12 +206,12 @@ class TestSomersD(object):
         res4 = stats.somersd(s4)
 
         # Cross-check with result from SAS FREQ:
-        assert_allclose(res.statistic, -0.116981132075470)
+        assert_allclose(res.statistic, -0.116981132075470, atol=1e-15)
         assert_allclose(res.statistic, res2.statistic)
         assert_allclose(res.statistic, res3.statistic)
         assert_allclose(res.statistic, res4.statistic)
 
-        assert_allclose(res.pvalue, 0.156376448188150)
+        assert_allclose(res.pvalue, 0.156376448188150, atol=1e-15)
         assert_allclose(res.pvalue, res2.pvalue)
         assert_allclose(res.pvalue, res3.pvalue)
         assert_allclose(res.pvalue, res4.pvalue)
