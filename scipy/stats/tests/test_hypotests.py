@@ -48,7 +48,8 @@ class TestSomersD(object):
         x = np.arange(10)
         y = np.arange(10)
         # Cross-check with result from SAS FREQ:
-        expected = (1.0, 0)
+        # SAS p value is not provided. 
+        expected = (1.000000000000000, 0) 
         res = stats.somersd(x, y)
         assert_allclose(res.statistic, expected[0], atol=1e-4)
         assert_allclose(res.pvalue, expected[1], atol=1e-4)
@@ -66,7 +67,8 @@ class TestSomersD(object):
         x = np.arange(10)
         y = np.arange(10)[::-1]
         # Cross-check with result from SAS FREQ:
-        expected = (-1.000000000000000, "NAN?")
+        # SAS p value is not provided. 
+        expected = (-1.000000000000000, 0)
         res = stats.somersd(x, y)
         assert_allclose(res.statistic, expected[0], atol=1e-4)
         assert_allclose(res.pvalue, expected[1], atol=1e-4)
