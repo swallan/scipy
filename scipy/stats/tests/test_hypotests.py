@@ -32,8 +32,8 @@ class TestSomersD(object):
         # Cross-check with result from SAS FREQ:
         expected = (0.000000000000000, 1.000000000000000)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0])
-        assert_allclose(res.pvalue, expected[1])
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # case without ties, con-dis close to zero
         x = [5, 2, 1, 3, 6, 4, 7]
@@ -41,8 +41,8 @@ class TestSomersD(object):
         # Cross-check with result from SAS FREQ:
         expected = (-0.142857142857140, 0.630326953157670)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0], atol=1e-4)
-        assert_allclose(res.pvalue, expected[1], atol=1e-4)
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # simple case without ties
         x = np.arange(10)
@@ -51,8 +51,8 @@ class TestSomersD(object):
         # SAS p value is not provided. 
         expected = (1.000000000000000, 0) 
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0], atol=1e-4)
-        assert_allclose(res.pvalue, expected[1], atol=1e-4)
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # swap a couple values and a couple more
         x = np.arange(10)
@@ -60,8 +60,8 @@ class TestSomersD(object):
         # Cross-check with result from SAS FREQ:
         expected = (0.911111111111110, 0.000000000000000)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0], atol=1e-4)
-        assert_allclose(res.pvalue, expected[1], atol=1e-4)
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # same in opposite direction
         x = np.arange(10)
@@ -70,16 +70,16 @@ class TestSomersD(object):
         # SAS p value is not provided. 
         expected = (-1.000000000000000, 0)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0], atol=1e-4)
-        assert_allclose(res.pvalue, expected[1], atol=1e-4)
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # swap a couple values and a couple more
         x = np.arange(10)
         y = np.array([9, 7, 8, 6, 5, 3, 4, 2, 1, 0])
-        expected = (-0.9111111111111111, 2.976190476190e-05)
+        expected = (-0.9111111111111111, 0.000000000000000)
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, expected[0], atol=1e-4)
-        assert_allclose(res.pvalue, expected[1], atol=1e-4)
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # with some ties
         # Cross-check with result from SAS FREQ:
@@ -87,8 +87,8 @@ class TestSomersD(object):
         x2 = [1, 4, 7, 1, 0]
         expected = (-0.500000000000000, 0.304901788178780)
         res = stats.somersd(x1, x2)
-        assert_allclose(res.statistic, expected[0])
-        assert_allclose(res.pvalue, expected[1])
+        assert_allclose(res.statistic, expected[0], atol=1e-15)
+        assert_allclose(res.pvalue, expected[1], atol=1e-15)
 
         # with only ties in one or both inputs
         # SAS will not produce an output for this:
@@ -155,12 +155,12 @@ class TestSomersD(object):
         d_rc = 0.342857142857140
         p = 0.092891940883700  # same p-value for either direction
         res = stats.somersd(x, y)
-        assert_allclose(res.statistic, d_cr, atol=1e-4)
+        assert_allclose(res.statistic, d_cr, atol=1e-15)
         assert_allclose(res.pvalue, p, atol=1e-4)
         assert_equal(res.table.shape, (3, 2))
         res = stats.somersd(y, x)
-        assert_allclose(res.statistic, d_rc, atol=1e-4)
-        assert_allclose(res.pvalue, p, atol=1e-4)
+        assert_allclose(res.statistic, d_rc, atol=1e-15)
+        assert_allclose(res.pvalue, p, atol=1e-15)
         assert_equal(res.table.shape, (2, 3))
 
     def test_somers_original(self):
