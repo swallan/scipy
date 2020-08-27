@@ -344,7 +344,26 @@ cdef class cKDTreeNode:
         readonly object       lesser
         readonly object       greater
 
+<<<<<<< HEAD
     cdef void _setup(cKDTreeNode self, cKDTree parent, ckdtreenode *node, np.intp_t level):
+=======
+    def __lt__(self, cKDTreeNode other):
+        return self._node < other._node
+
+    def __gt__(self, cKDTreeNode other):
+        return self._node > other._node
+
+    def __le__(self, cKDTreeNode other):
+        return self._node <= other._node
+
+    def __ge__(self, cKDTreeNode other):
+        return self._node >= other._node
+
+    def __eq__(self, cKDTreeNode other):
+        return self._node == other._node
+
+    cdef void _setup(cKDTreeNode self):
+>>>>>>> 8aa27bbac... WIP: Replace KDTree with a thin wrapper over cKDTre
         cdef cKDTreeNode n1, n2
         self.level = level
         self.split_dim = node.split_dim
