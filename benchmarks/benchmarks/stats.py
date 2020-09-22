@@ -235,7 +235,7 @@ class ContinuousFitAnalyticalMLEOverride(Benchmark):
 
 
 class AlexanderGovernImplementations(Benchmark):
-    params = [[stats.AlexanderGovern, stats.alexander_govern_progressive]]
+    params = [[stats.AlexanderGovern, stats.alexandergovern_alt]]
     
     def setup(self, func):
         valMult = 500
