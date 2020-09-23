@@ -3833,7 +3833,7 @@ def alexandergovern_alt(*args):
     """
 
     if len(args) < 2:
-        raise TypeError(f"2 or more inputs required, got {len(args)}")
+        raise ValueError(f"2 or more inputs required, got {len(args)}")
 
     # Convert passed list to ndarray using list comprehension. `np.asarray`
     # isn't used directly on input b/c it doesn't support jagged 2d arrays

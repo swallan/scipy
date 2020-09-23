@@ -4759,7 +4759,13 @@ class TestAlexanderGovern(object):
                  23.56173993146409, -30.47133600859524, 11.878923752568431,
                  6.659007424270365, 21.261996745527256, -6.083678472686013,
                  7.400376198325763, 5.341975815444621]
+
         A, p = stats.AlexanderGovern(one, two, eight)
+        assert_allclose(A,  1.3599405447999450836)
+        assert_allclose(p, 0.50663205309676440091)
+
+        # temp
+        A, p = stats.alexandergovern_alt(one, two, eight)
         assert_allclose(A,  1.3599405447999450836)
         assert_allclose(p, 0.50663205309676440091)
 
@@ -4771,7 +4777,13 @@ class TestAlexanderGovern(object):
                   487.3, 493.08, 494.31, 499.1, 886.41]
         old = [519.01, 528.5, 530.23, 536.03, 538.56, 538.83, 557.24, 558.61,
                558.95, 565.43, 586.39, 594.69, 629.22, 645.69, 691.84]
+
         A, p = stats.AlexanderGovern(young, middle, old)
+        assert_allclose(A,  5.3237, atol=1e-3)
+        assert_allclose(p, 0.06982, atol=1e-4)
+
+        # temp
+        A, p = stats.alexandergovern_alt(young, middle, old)
         assert_allclose(A,  5.3237, atol=1e-3)
         assert_allclose(p, 0.06982, atol=1e-4)
 
@@ -4781,6 +4793,10 @@ class TestAlexanderGovern(object):
         j3 = [2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6]
         j4 = [3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 16]
         A, p = stats.AlexanderGovern(j1, j2, j3, j4)
+        assert_allclose(A, 7.38, atol=1e-2)
+
+        # temp
+        A, p = stats.alexandergovern_alt(j1, j2, j3, j4)
         assert_allclose(A, 7.38, atol=1e-2)
 
     def test_compare_scholar3(self):
@@ -4801,7 +4817,15 @@ class TestAlexanderGovern(object):
         A, p = stats.AlexanderGovern(x1, x2)
         assert_allclose(A, 0.713526, atol=1e-5)
         assert_allclose(p, 0.398276, atol=1e-5)
-    
+
+        # temp
+        A, p = stats.alexandergovern_alt(x1, x2)
+        assert_allclose(A, 0.713526, atol=1e-5)
+        assert_allclose(p, 0.398276, atol=1e-5)
+
+    def test_raises(self):
+        assert_raises(TypeError, stats.AlexanderGovern, [0, 1, 2])
+        assert_raises(ValueError, stats.alexandergovern_alt, [0, 0, 0])
 
 class TestFOneWay(object):
 
