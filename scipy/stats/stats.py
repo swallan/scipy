@@ -3788,6 +3788,7 @@ def AlexanderGovern(*args):
     p = distributions.chi2.sf(A, len(args) - 1)
     return AlexanderGovernResult(A, p)
 
+
 def alexandergovern_alt(*args):
     """
     Performs the Alexander Govern test.
@@ -3842,25 +3843,28 @@ def alexandergovern_alt(*args):
     lens = np.asarray([len(A) for A in a])
     means = np.asarray([np.mean(A) for A in a])
 
+    # Calc standard error of mean.
     # List comprehension used to deal with possible jagged input arrays
+    # Alternative method using linalg.norm is slower.
     standard_error = np.asarray([np.std(a, ddof=1) / np.sqrt(l) for a, l
                                  in zip(a, lens)])
+
+    # Calculate sample weights and varience
     sample_weights = 1 / standard_error ** 2 / np.sum(1 / standard_error ** 2)
     var_w = np.sum(sample_weights * means)
 
-    # Calculate the AG statistic by running calc_z2. Vectorization is faster
-    # than list comprehension for larger sample sizes. From this point forth
-    # all interactions between samples (standard error, etc) have been cached
-    # in the above variables
+    # Calculate the AG statistic using the previously calculated values.
+    # At this point all are non-jagged, allowing avoidance of list
+    # comprehension/loops
     df = lens - 1
     t = (means - var_w) / standard_error
 
-    # Calculate a,b,c using evaluating AG's formula [2](9), [2](10)
+    # Calculate a,b,c using evaluating AG's formulas (9), (10)
     a = df - .5
     b = 48 * a ** 2
     c = (a * np.log(1 + t ** 2 / df)) ** .5
 
-    # Calculate the three terms in evaluating AG's Z formula [2](8)
+    # Calculate the three terms in evaluating AG's Z formula (8)
     t0 = c
     t1 = (c ** 3 + 3 * c) / b
     t3 = (4 * c ** 7 + 33 * c ** 5 + 240 * c ** 3 + 855 * c)
