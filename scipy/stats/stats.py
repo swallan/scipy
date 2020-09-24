@@ -146,6 +146,7 @@ ANOVA Functions
    :toctree: generated/
 
    f_oneway
+   alexandergovern
 
 Support Functions
 -----------------
@@ -209,7 +210,8 @@ __all__ = ['find_repeats', 'gmean', 'hmean', 'mode', 'tmean', 'tvar',
            'tiecorrect', 'ranksums', 'kruskal', 'friedmanchisquare',
            'rankdata', 'rvs_ratio_uniforms',
            'combine_pvalues', 'wasserstein_distance', 'energy_distance',
-           'brunnermunzel', 'epps_singleton_2samp', 'AlexanderGovern' ,'alexandergovern_alt']
+           'brunnermunzel', 'epps_singleton_2samp', 'alexandergovern',
+           'alexandergovern_alt']
 
 
 def _contains_nan(a, nan_policy='propagate'):
@@ -3696,7 +3698,7 @@ AlexanderGovernResult = namedtuple("AlexanderGovernResult", ("statistic",
                                                              "pvalue"))
 
 
-def AlexanderGovern(*args):
+def alexandergovern(*args):
     """
     Performs the Alexander Govern test.
 
@@ -3842,14 +3844,9 @@ def alexandergovern_alt(*args):
     # Calculate sample constants to avoid recalculating
     lens = np.asarray([len(A) for A in a])
     means = np.asarray([np.mean(A) for A in a])
-
-    # Calc standard error of mean.
-    # List comprehension used to deal with possible jagged input arrays
-    # Alternative method using linalg.norm is slower.
-    standard_error = np.asarray([np.std(a, ddof=1) / np.sqrt(l) for a, l
-                                 in zip(a, lens)])
-
-    # Calculate sample weights and varience
+    # List comprehension used over vectorization to avoid broadcasting errors
+    standard_error = np.asarray([calc_sem(a, m, l) for a, m, l
+                                 in zip(a, means, lens)])
     sample_weights = 1 / standard_error ** 2 / np.sum(1 / standard_error ** 2)
     var_w = np.sum(sample_weights * means)
 
