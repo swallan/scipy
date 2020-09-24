@@ -4847,7 +4847,7 @@ class TestAlexanderGovern(object):
         Alexander-Govern And Yuen Tests Under Non-Normality And Variance
         Heteroscedasticity', by Ayed A. Almoied. 2017. Page 34-37.
         https://digitalcommons.wayne.edu/cgi/viewcontent.cgi?article=2775&context=oa_dissertations
-        '''
+        """
         x1 = [-1.77559, -1.4113, -0.69457, -0.54148, -0.18808, -0.07152,
               0.04696, 0.051183, 0.148695, 0.168052, 0.422561, 0.458555,
               0.616123, 0.709968, 0.839956, 0.857226, 0.929159, 0.981442,
@@ -4886,7 +4886,7 @@ class TestAlexanderGovern(object):
 
         Result     : Difference is not statistically significant. 
         ------------------------------------------------------------- 
-        '''
+        
         assert_allclose(A, 0.7135182)
         assert_allclose(p, 0.3982783)
         
