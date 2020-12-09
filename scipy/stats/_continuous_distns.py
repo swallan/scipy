@@ -8893,12 +8893,13 @@ class studentized_t_gen(rv_continuous):
                     sc.gamma(v / 2) * 2 ** (v / 2 - 1)) * res
 
     def _cdf(self, x, k, v):
+        x, atol = x
         if v < 120:
             user_data = np.array([x, k, v], float).ctypes.data_as(
                 ctypes.c_void_p)
             llc = LowLevelCallable.from_cython(_stats, '_genstudentized_t_cdf',
                                                user_data)
-            res = integrate.dblquad(llc, 0, np.inf, gfun=-np.inf, hfun=np.inf)[0]
+            res = integrate.dblquad(llc, 0, np.inf, gfun=-np.inf, hfun=np.inf, epsabs=atol)[0]
 
             return np.sqrt(2 * np.pi) * k * v ** (v / 2) / (
                     sc.gamma(v / 2) * 2 ** (v / 2 - 1)) * res
@@ -8907,7 +8908,7 @@ class studentized_t_gen(rv_continuous):
             llc = LowLevelCallable.from_cython(_stats,
                                                '_genstudentized_t_cdf_asymptomatic',
                                                user_data)
-            res = integrate.quad(llc, -np.inf, np.inf)[0]
+            res = integrate.quad(llc, -np.inf, np.inf, epsabs=atol)[0]
             return k * res
 
 
