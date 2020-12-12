@@ -1,4 +1,4 @@
-'''Boost drop-in replacement for  scipy.stats.ncx2.'''
+'''Boost drop-in replacement for scipy.stats.ncx2.'''
 
 import numpy as np
 from scipy.stats import rv_continuous, chi2
@@ -19,29 +19,31 @@ class ncx2_gen(rv_continuous):
         return random_state.noncentral_chisquare(df, nc, size)
 
     def _pdf(self, x, df, nc):
-        cond = np.ones_like(x, dtype=bool) & (nc != 0)
-        return _lazywhere(cond, (x, df, nc), f=_ncx2_pdf, f2=chi2.pdf)
-        # return _ncx2_pdf(x, df, nc)
+        # cond = np.ones_like(x, dtype=bool) & (nc != 0)
+        # return _lazywhere(cond, (x, df, nc), f=_ncx2_pdf, f2=chi2.pdf)
+        with np.errstate(over='ignore'):
+            # TODO: figure out why we get overflow warnings on tests
+            return _ncx2_pdf(x, df, nc)
 
     def _cdf(self, x, df, nc):
-        cond = np.ones_like(x, dtype=bool) & (nc != 0)
-        return _lazywhere(cond, (x, df, nc), f=_ncx2_cdf, f2=chi2.cdf)
-        # return _ncx2_cdf(x, df, nc)
+        # cond = np.ones_like(x, dtype=bool) & (nc != 0)
+        # return _lazywhere(cond, (x, df, nc), f=_ncx2_cdf, f2=chi2.cdf)
+        return _ncx2_cdf(x, df, nc)
 
     def _sf(self, x, df, nc):
-        cond = np.ones_like(x, dtype=bool) & (nc != 0)
-        return _lazywhere(cond, (x, df, nc), f=_ncx2_icdf, f2=chi2.sf)
-        # return _ncx2_icdf(x, df, nc)
+        # cond = np.ones_like(x, dtype=bool) & (nc != 0)
+        # return _lazywhere(cond, (x, df, nc), f=_ncx2_icdf, f2=chi2.sf)
+        return _ncx2_icdf(x, df, nc)
 
     def _isf(self, x, df, nc):
-        cond = np.ones_like(x, dtype=bool) & (nc != 0)
-        return _lazywhere(cond, (x, df, nc), f=_ncx2_iquantile, f2=chi2.isf)
-        # return _ncx2_iquantile(x, df, nc)
+        # cond = np.ones_like(x, dtype=bool) & (nc != 0)
+        # return _lazywhere(cond, (x, df, nc), f=_ncx2_iquantile, f2=chi2.isf)
+        return _ncx2_iquantile(x, df, nc)
 
     def _ppf(self, q, df, nc):
-        cond = np.ones_like(q, dtype=bool) & (nc != 0)
-        return _lazywhere(cond, (q, df, nc), f=_ncx2_quantile, f2=chi2.ppf)
-        # return _ncx2_quantile(q, df, nc)
+        # cond = np.ones_like(q, dtype=bool) & (nc != 0)
+        # return _lazywhere(cond, (q, df, nc), f=_ncx2_quantile, f2=chi2.ppf)
+        return _ncx2_quantile(q, df, nc)
 
     def _stats(self, df, lamda):
         return(

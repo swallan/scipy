@@ -12,6 +12,11 @@ class beta_gen(rv_continuous):
     def _pdf(self, x, a, b):
         return _beta_pdf(x, a, b)
 
+    def _logpdf(self, x, a, b):
+        # TODO: logpdf not working for some fit() cases
+        from scipy.stats import beta as scipy_beta
+        return scipy_beta.logpdf(x, a, b)
+
     def _cdf(self, x, a, b):
         return _beta_cdf(x, a, b)
 
