@@ -11,7 +11,7 @@ def gen_func_defs_pxd(outfile, max_num_inputs=4):
     '''
 
     contents = ''
-    contents += f'cdef extern from "{pathlib.Path(__file__).parent / "func_defs.hpp"}" namespace "" nogil:\n'
+    contents += f'cdef extern from "{str(pathlib.Path(__file__).parent / "func_defs.hpp")}" namespace "" nogil:\n'
 
     x_funcs = ('pdf', 'cdf', 'icdf', 'quantile', 'iquantile')  # functions that take ctor params and parameter "x"
     no_x_funcs = ('mean', 'variance', 'skewness', 'kurtosis_excess')  # functions that take only ctor params

@@ -1,5 +1,4 @@
 import pathlib
-import inspect
 from shutil import copyfile
 from typing import NamedTuple
 
