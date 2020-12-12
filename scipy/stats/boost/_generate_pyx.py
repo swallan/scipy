@@ -1,16 +1,20 @@
 import pathlib
 import inspect
 from shutil import copyfile
+from typing import NamedTuple
 
-import scipy.stats
+class _KlassMap(NamedTuple):
+    scipy_name: str
+    ctor_args: tuple
 
-# map boost stats classes to scipy classes; b -> s
-klass_mapper = {
-    'bernoulli': scipy.stats.bernoulli,
-    'beta': scipy.stats.beta,
-    'binomial': scipy.stats.binom,
-    'negative_binomial': scipy.stats.nbinom,
-    'non_central_chi_squared': scipy.stats.ncx2,
+# map boost stats classes to scipy class names and number of
+# constructor arguments; b -> (s, #)
+_klass_mapper = {
+    'bernoulli': _KlassMap('bernoulli', ('p')),
+    'beta': _KlassMap('beta', ('a', 'b')),
+    'binomial': _KlassMap('binom', ('n', 'p')),
+    'negative_binomial': _KlassMap('nbinom', ('n', 'p')),
+    'non_central_chi_squared': _KlassMap('ncx2', ('df', 'nc')),
 }
 
 
@@ -19,7 +23,8 @@ if __name__ == '__main__':
     (pathlib.Path(__file__).parent / 'src').mkdir(exist_ok=True, parents=True)
     src_dir = pathlib.Path(__file__).parent / 'src'
 
-    # copy contents of include into directory
+    # copy contents of include into directory to satisfy Cython
+    # PXD include conditions
     inc_dir = pathlib.Path(__file__).parent / 'include'
     src = 'templated_pyufunc.pxd'
     copyfile(inc_dir / src, src_dir / src)
@@ -28,17 +33,11 @@ if __name__ == '__main__':
     from include.gen_func_defs_pxd import gen_func_defs_pxd
     from include.code_gen import ufunc_gen
     gen_func_defs_pxd(f'{src_dir}/func_defs.pxd')
-    for b, s in klass_mapper.items():
-        if s is None:
-            print(f'{b} has no scipy equivalent! Skipping!')
-            continue
-        # cheat for now by pulling constructors from scipy classes
-        scipy_name = s.__class__.__name__.split('_gen')[0]
-        ctor_args = [p for p in inspect.signature(s._stats).parameters if p != 'moments']
+    for b, s in _klass_mapper.items():
         ufunc_gen(
-            wrapper_prefix=scipy_name,
+            wrapper_prefix=s.scipy_name,
             types=['NPY_DOUBLE', 'NPY_FLOAT'],
-            num_ctor_args=len(ctor_args),
-            filename=f'{src_dir}/{scipy_name}_ufunc.pyx',
+            num_ctor_args=len(s.ctor_args),
+            filename=f'{src_dir}/{s.scipy_name}_ufunc.pyx',
             boost_dist=f'{b}_distribution',
         )
