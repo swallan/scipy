@@ -25,6 +25,11 @@ class ncx2_gen(rv_continuous):
             # TODO: figure out why we get overflow warnings on tests
             return _ncx2_pdf(x, df, nc)
 
+    def _logpdf(self, x, df, nc):
+        # TODO: see test_distributions.py::test_ncx2_tails_pdf[dist1]
+        with np.errstate(divide='ignore'):
+            return np.log(self._pdf(x, df, nc))
+
     def _cdf(self, x, df, nc):
         # cond = np.ones_like(x, dtype=bool) & (nc != 0)
         # return _lazywhere(cond, (x, df, nc), f=_ncx2_cdf, f2=chi2.cdf)
