@@ -3990,6 +3990,61 @@ class TestBurr(object):
         assert_(np.isfinite(e4))
 
 
+class TestStudentizedRange(object):
+    # Tables are arranged with the first number in each subarray
+    # indicating v, with the second value ([1]) at k=2. k increases by
+    # 6 for each new value to test a range of values.
+    # The format is [v, k=2, k=8, k=14, k=20]
+
+    alpha05 = [[1, 17.97, 45.40, 54.33, 59.56],
+               [3, 4.501, 8.853, 10.35, 11.24],
+               [10, 3.151, 5.305, 6.028, 6.467],
+               [20, 2.950, 4.768, 5.357, 5.714]]
+
+    alpha01 = [[1, 90.03, 227.2, 271.8, 298.0],
+               [3, 8.261, 15.64, 18.22, 19.77],
+               [10, 4.482, 6.875, 7.712, 8.226],
+               [20, 4.024, 5.839, 6.450, 6.823]]
+
+    def test_cdf_against_tables(self):
+        def _test_set_cdf(set, significance):
+            v = set[0]
+            for k_ind in range(3):
+                k = 2 + k_ind * 6
+                q = set[1 + k_ind]
+                res_p = stats.distributions.studentized_range.cdf(q, k, v)
+
+                # In assertion, only expect as many sig-figs as we have input
+                assert_allclose(res_p, significance, rtol=1e-4)
+
+        for test_set in self.alpha05:
+            _test_set_cdf(test_set, 0.95)
+
+        for test_set in self.alpha01:
+            _test_set_cdf(test_set, 0.99)
+        return
+
+    # @pytest.mark.slow
+    def test_ppf_against_tables(self):
+        def _test_set_ppf(set, significance):
+            v = set[0]
+            for k_ind in range(3):
+                k = 2 + k_ind * 6
+                q = set[1 + k_ind]
+                res_q = stats.distributions.studentized_range.ppf(significance,
+                                                                  k, v)
+                # Accuracy is somthing to be improved on.
+                assert_allclose(res_q, q, rtol=2e-3)
+
+        for test_set in self.alpha05:
+            _test_set_ppf(test_set, 0.95)
+
+        for test_set in self.alpha01:
+            _test_set_ppf(test_set, 0.99)
+        return
+
+
+
 def test_540_567():
     # test for nan returned in tickets 540, 567
     assert_almost_equal(stats.norm.cdf(-1.7624320982), 0.03899815971089126,

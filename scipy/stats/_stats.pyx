@@ -522,7 +522,7 @@ cdef double _Phi(double z) nogil:
     return 0.5 * math.erfc(-z * math.M_SQRT1_2)
 
 
-cdef double _genstudentized_t_cdf(int n, double[2] x, void *user_data) nogil:
+cdef double _genstudentized_range_cdf(int n, double[2] x, void *user_data) nogil:
     # destined to be used in a LowLevelCallable
     q = (<double *>user_data)[0]
     k = (<double *>user_data)[1]
@@ -530,17 +530,18 @@ cdef double _genstudentized_t_cdf(int n, double[2] x, void *user_data) nogil:
 
     s = x[1]
     z = x[0]
+    res = math.pow(s, (v - 1)) * _phi(math.sqrt(v) * s) * _phi(z) * math.pow(_Phi(z + q * s) - _Phi(z), k - 1)
 
-    return math.pow(s, (v - 1)) * _phi(math.sqrt(v) * s) * _phi(z) * math.pow(_Phi(z + q * s) - _Phi(z), k - 1)
+    return res * math.sqrt(2 * math.M_PI) * k * math.pow(v, v / 2) / ( math.tgamma(v / 2) * math.pow(2, v / 2 - 1))
 
-cdef double _genstudentized_t_cdf_asymptomatic(double z, void *user_data) nogil:
+cdef double _genstudentized_range_cdf_asymptomatic(double z, void *user_data) nogil:
     # destined to be used in a LowLevelCallable
     q = (<double *>user_data)[0]
     k = (<double *>user_data)[1]
 
-    return _phi(z) * math.pow(_Phi(z + q) - _Phi(z), k - 1)
+    return k * _phi(z) * math.pow(_Phi(z + q) - _Phi(z), k - 1)
 
-cdef double _genstudentized_t_pdf(int n, double[2] x, void *user_data) nogil:
+cdef double _genstudentized_range_pdf(int n, double[2] x, void *user_data) nogil:
     # destined to be used in a LowLevelCallable
     q = (<double *>user_data)[0]
     k = (<double *>user_data)[1]

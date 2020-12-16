@@ -8854,65 +8854,77 @@ class rv_histogram(rv_continuous):
         return dct
 
 
-class studentized_t_gen(rv_continuous):
-    r"""The Studentized Range Distribution
-    TODO: DOCSTRING TAKEN FROM NORM
-    The location (``loc``) keyword specifies the mean.
-    The scale (``scale``) keyword specifies the standard deviation.
+class studentized_range_gen(rv_continuous):
+    """
+    The upper half of a generalized normal continuous random variable.
 
     %(before_notes)s
 
+    See Also
+    --------
+    gennorm : generalized normal distribution
+    expon : exponential distribution
+    halfnorm : half normal distribution
+
     Notes
     -----
-    The probability density function for `norm` is:
+    The probability density function for `halfgennorm` is:
 
-    .. math::
+    References
+    ----------
 
-        f(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}
-
-    for a real number :math:`x`.
-
-    %(after_notes)s
+    .. [1] "Generalized normal distribution, Version 1",
+           https://en.wikipedia.org/wiki/Generalized_normal_distribution#Version_1
 
     %(example)s
 
     """
 
     def _argcheck(self, k, v):
-        return (k > 0) & (v > 0)
+        """Verify args"""
+        return np.all(k > 1) and np.all(v > 0)
 
-    def _pdf(self, x, k, v):
-        #First attempt at a PDF. TODO: VERIFY!
-        user_data = np.array([x, k, v], float).ctypes.data_as(
-            ctypes.c_void_p)
-        llc = LowLevelCallable.from_cython(_stats, '_genstudentized_t_pdf',
-                                           user_data)
-        res = integrate.dblquad(llc, 0, np.inf, gfun=-np.inf, hfun=np.inf)[0]
+    def _ppf(self, p, k, v):
+        """the ppf"""
 
-        return np.sqrt(2 * np.pi) * k * (k - 1) * v ** (v / 2) / (
-                    sc.gamma(v / 2) * 2 ** (v / 2 - 1)) * res
+        # Credit to swallan for the concept
+        @np.vectorize
+        def _single_p_calc(p, k, v):
+            def wrapper_cdf(q, k, v, alpha):
+                return alpha - self.cdf(q, k, v)
+
+            #Increase max possible q with very low treatments
+            bracket_max = 1000 if v < 3 else 100
+            res = optimize.root_scalar(wrapper_cdf, bracket=[0, bracket_max], args=(k, v, p))
+            return res.root
+        return _single_p_calc(p, k, v)
 
     def _cdf(self, x, k, v):
-        
-        if v < 120:
-            user_data = np.array([x, k, v], float).ctypes.data_as(
-                ctypes.c_void_p)
-            llc = LowLevelCallable.from_cython(_stats, '_genstudentized_t_cdf',
-                                               user_data)
-            res = integrate.dblquad(llc, 0, np.inf, gfun=-np.inf, hfun=np.inf)[0]
+        """The cdf"""
 
-            return np.sqrt(2 * np.pi) * k * v ** (v / 2) / (
-                    sc.gamma(v / 2) * 2 ** (v / 2 - 1)) * res
-        else:  # Use asymptomatic method
-            user_data = np.array([x, k], float).ctypes.data_as(ctypes.c_void_p)
-            llc = LowLevelCallable.from_cython(_stats,
-                                               '_genstudentized_t_cdf_asymptomatic',
-                                               user_data)
-            res = integrate.quad(llc, -np.inf, np.inf)[0]
-            return k * res
+        @np.vectorize
+        def _single_cdf(q, k, v):
+            if v < 120:
+                user_data = np.array([q, k, v], float).ctypes.data_as(
+                    ctypes.c_void_p)
+                llc = LowLevelCallable.from_cython(_stats, '_genstudentized_range_cdf',
+                                                   user_data)
+                res = integrate.dblquad(llc, 0, np.inf, gfun=-np.inf, hfun=np.inf)[0]
+
+                return res
+
+            else:  # Use asymptomatic method
+                user_data = np.array([q, k], float).ctypes.data_as(ctypes.c_void_p)
+                llc = LowLevelCallable.from_cython(_stats,
+                                                   '_genstudentized_range_cdf_asymptomatic',
+                                                   user_data)
+                res = integrate.quad(llc, -np.inf, np.inf)[0]
+                return res
+
+        return _single_cdf(x, k, v)
 
 
-studentized_t = studentized_t_gen(name='studentized_t')
+studentized_range = studentized_range_gen(name='studentized_range')
 
 
 # Collect names of classes and objects in this module.
