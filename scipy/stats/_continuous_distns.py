@@ -8904,7 +8904,7 @@ class studentized_range_gen(rv_continuous):
         q, atol = x
         @np.vectorize
         def _single_cdf(q, k, v):
-            
+            # print(atol)
             if v < 120:
                 user_data = np.array([q, k, v], float).ctypes.data_as(
                     ctypes.c_void_p)
