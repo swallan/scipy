@@ -15,11 +15,14 @@ from scipy.stats.boost import (
 )
 
 def test_issue_12635():
-    p = 0.9999999999997369
-    a, b = 76.0, 66334470.0
-    tol = 1e-2
-    assert not scipy_beta.ppf(p, a-1, b) - scipy_beta.ppf(p, a, b) < tol
-    assert boost_beta.ppf(p, a-1, b) - boost_beta.ppf(p, a, b) < tol
+    # Confirm that Boost's beta distribution resolves gh-12635. Check against R:
+    # options(digits=16)
+    # p = 0.9999999999997369
+    # a = 75.0
+    # b = 66334470.0
+    # print(qbeta(p, a, b))
+    p, a, b = 0.9999999999997369, 75.0, 66334470.0
+    assert np.allclose(boost_beta.ppf(p, a, b), 2.343620802982393e-06)
 
 def test_issue_12794():
     count_list = [10, 100, 1000]
