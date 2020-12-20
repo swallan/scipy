@@ -40,6 +40,15 @@ def test_issue_12794():
     res = boost_beta.sf(inv, count_list + 1, 100000 - count_list)
     assert np.allclose(res, p)
 
+def test_issue_12796():
+    #Confirm that Boost's beta distribution succeeds in the case of gh-12796
+    alpha_2 = 5e-6
+    count_ = np.arange(1, 20)
+    nobs = 100000
+    q, a, b = 1 - alpha_2, count_ + 1, nobs - count_
+    inv = boost_beta.ppf(q, a, b)
+    res = boost_beta.cdf(inv, a, b)
+    assert np.allclose(res, 1 - alpha_2)
 
 def test_issue_10317():
     alpha, n, p = 0.9, 10, 1
@@ -58,17 +67,6 @@ def test_issue_11777():
     b = boost_ncx2(df, nc)
     assert not all(s.pdf(np.linspace(s.ppf(0.001), s.ppf(0.999), num=n)) > 0)
     assert all(b.pdf(np.linspace(b.ppf(0.001), b.ppf(0.999), num=n)) > 0)
-
-def test_issue_12796():
-    q, a, b = (
-        0.999995,
-        np.array([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                  19, 20]),
-        np.array([99999, 99998, 99997, 99996, 99995, 99994, 99993, 99992, 99991,
-                  99990, 99989, 99988, 99987, 99986, 99985, 99984, 99983, 99982,
-                  99981]))
-    assert not all(np.diff(scipy_beta(a, b).ppf(q)) > 0)
-    assert all(np.diff(boost_beta(a, b).ppf(q)) > 0)
 
 def test_issue_7406():
     assert not scipy_binom.ppf(0.5, 0, 0.5) == 0
