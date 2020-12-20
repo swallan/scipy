@@ -25,12 +25,21 @@ def test_issue_12635():
     assert np.allclose(boost_beta.ppf(p, a, b), 2.343620802982393e-06)
 
 def test_issue_12794():
-    count_list = [10, 100, 1000]
+    # Confirm that Boost's beta distribution resolves gh-12794. Check against R.
+    # options(digits=16)
+    # p = 1e-11
+    # count_list = c(10,100,1000)
+    # print(qbeta(1-p, count_list + 1, 100000 - count_list))
+    inv_R = np.array([0.0004944464889611935,
+                      0.0018360586912635726,
+                      0.0122663919942518351])
+    count_list = np.array([10, 100, 1000])
     p = 1e-11
-    sci = [scipy_beta.isf(p, count + 1, 100000 - count) for count in count_list]
-    boo = [boost_beta.isf(p, count + 1, 100000 - count) for count in count_list]
-    assert not all(np.diff(sci) > 0)
-    assert all(np.diff(boo) > 0)
+    inv = boost_beta.isf(p, count_list + 1, 100000 - count_list)
+    assert np.allclose(inv, inv_R)
+    res = boost_beta.sf(inv, count_list + 1, 100000 - count_list)
+    assert np.allclose(res, p)
+
 
 def test_issue_10317():
     alpha, n, p = 0.9, 10, 1
