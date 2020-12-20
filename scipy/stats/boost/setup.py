@@ -39,6 +39,7 @@ def configuration(parent_package='', top_path=None):
         ext._pre_build_hook = pre_build_hook
 
     config.add_subpackage('_stats')
+    config.add_subpackage('tests')
     return config
 
 
