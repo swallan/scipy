@@ -76,6 +76,9 @@ def test_issue_5122():
     ppf = boost_binom.ppf(x, n, p)
     assert np.all(ppf == n)
 
+def test_issue_1603():
+    assert np.all(boost_binom(1000, np.logspace(-3, -100)).ppf(0.01) == 0)
+
 def test_issue_11777():
     df, nc = 6700, 5300
     n = 100
