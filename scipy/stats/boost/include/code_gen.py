@@ -121,7 +121,7 @@ def ufunc_gen(wrapper_prefix: str, types: list, num_ctor_args: int, filename: st
             for jj, t in enumerate(types):
                 ctype = {
                     'NPY_LONGDOUBLE': 'longdouble',
-                    'NPY_DOUBLE': 'double ',
+                    'NPY_DOUBLE': 'double',
                     'NPY_FLOAT': 'float',
                     'NPY_FLOAT16': 'float16_t',
                 }[t]
