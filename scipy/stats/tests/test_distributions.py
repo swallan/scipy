@@ -4458,21 +4458,24 @@ def test_ncx2_zero_nc(dist, method, expected):
     assert_allclose(result, expected, atol=1e-15)
 
 
-def test_ncx2_zero_nc_rvs():
+@pytest.mark.parametrize('dist', [stats.ncx2, stats.boost.ncx2])
+def test_ncx2_zero_nc_rvs(dist):
     # gh-5441
     # ncx2 with nc=0 is identical to chi2
-    result = stats.ncx2.rvs(df=10, nc=0, random_state=1)
+    result = dist.rvs(df=10, nc=0, random_state=1)
     expected = stats.chi2.rvs(df=10, random_state=1)
     assert_allclose(result, expected, atol=1e-15)
 
 
-def test_ncx2_gh12731():
+@pytest.mark.parametrize('dist', [stats.ncx2, stats.boost.ncx2])
+def test_ncx2_gh12731(dist):
     # test that gh-12731 is resolved; previously these were all 0.5
     nc = 10**np.arange(5, 10)
-    assert_equal(stats.ncx2.cdf(1e4, df=1, nc=nc), 0)
+    assert_equal(dist.cdf(1e4, df=1, nc=nc), 0)
 
 
-def test_ncx2_gh8665():
+@pytest.mark.parametrize('dist', [stats.ncx2, stats.boost.ncx2])
+def test_ncx2_gh8665(dist):
     # test that gh-8665 is resolved; previously this tended to nonzero value
     x = np.array([4.99515382e+00, 1.07617327e+01, 2.31854502e+01,
                   4.99515382e+01, 1.07617327e+02, 2.31854502e+02,
@@ -4481,7 +4484,7 @@ def test_ncx2_gh8665():
                   4.99515382e+04])
     nu, lam = 20, 499.51538166556196
 
-    sf = stats.ncx2.sf(x, df=nu, nc=lam)
+    sf = dist.sf(x, df=nu, nc=lam)
     # computed in R. Couldn't find a survival function implementation
     # options(digits=16)
     # x <- c(4.99515382e+00, 1.07617327e+01, 2.31854502e+01, 4.99515382e+01,
@@ -4744,9 +4747,10 @@ def test_docstrings():
                 assert_(re.search(regex, dist.__doc__) is None)
 
 
-def test_infinite_input():
+@pytest.mark.parametrize('dist', [stats.ncx2, stats.boost.ncx2])
+def test_infinite_input(dist):
     assert_almost_equal(stats.skellam.sf(np.inf, 10, 11), 0)
-    assert_almost_equal(stats.ncx2._cdf(np.inf, 8, 0.1), 1)
+    assert_almost_equal(dist._cdf(np.inf, 8, 0.1), 1)
 
 
 def test_lomax_accuracy():
