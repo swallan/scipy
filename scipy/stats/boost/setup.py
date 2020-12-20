@@ -38,6 +38,7 @@ def configuration(parent_package='', top_path=None):
         # Add c++11/14 support:
         ext._pre_build_hook = pre_build_hook
 
+    config.add_subpackage('_stats')
     return config
 
 
