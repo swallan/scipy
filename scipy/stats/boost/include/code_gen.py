@@ -22,7 +22,6 @@ from templated_pyufunc cimport PyUFunc_T
 from func_defs cimport (
     {FUNC_DEFS_CIMPORTS},
 )
-
 cdef extern from "boost/math/distributions/{short_boost_name}.hpp" namespace "boost::math" nogil:
     cdef cppclass {boost_name} nogil:
         pass
@@ -71,7 +70,7 @@ def ufunc_gen(wrapper_prefix: str, types: list, num_ctor_args: int, filename: st
     wrappers = [
         WrapperDef(ufunc_name=f'_{wrapper_prefix}_pdf',
                    num_inputs=1+num_ctor_args,
-                   func_name='pdf'),
+                   func_name='pdf' if boost_dist != 'beta_distribution' else f'pdf_beta'),
         WrapperDef(ufunc_name=f'_{wrapper_prefix}_cdf',
                    num_inputs=1+num_ctor_args,
                    func_name='cdf'),
@@ -122,7 +121,7 @@ def ufunc_gen(wrapper_prefix: str, types: list, num_ctor_args: int, filename: st
             for jj, t in enumerate(types):
                 ctype = {
                     'NPY_LONGDOUBLE': 'longdouble',
-                    'NPY_DOUBLE': 'double',
+                    'NPY_DOUBLE': 'double ',
                     'NPY_FLOAT': 'float',
                     'NPY_FLOAT16': 'float16_t',
                 }[t]

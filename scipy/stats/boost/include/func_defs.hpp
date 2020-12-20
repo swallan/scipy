@@ -15,6 +15,18 @@ RealType boost_pdf(const RealType x, const Args ... args) {
   return NAN; // inf or -inf returns NAN
 }
 
+// patch for boost::math::beta_distribution throwing exception for x = 1, beta < 1
+template<template <typename, typename> class Dist, class RealType, class ... Args>
+RealType boost_pdf_beta(const RealType x, const RealType a, const RealType b) {
+  if (std::isfinite(x)) {
+    if (x == 1) {
+      return INFINITY;
+    }
+    return boost::math::pdf(boost::math::beta_distribution<RealType, Policy>(a, b), x);
+  }
+  return NAN;
+}
+
 template<template <typename, typename> class Dist, class RealType, class ... Args>
 RealType boost_cdf(const RealType x, const Args ... args) {
   if (std::isfinite(x)) {

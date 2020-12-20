@@ -124,8 +124,7 @@ def test_cont_basic(distname, arg):
     check_sf_isf(distfn, arg, distname)
     check_pdf(distfn, arg, distname)
     check_pdf_logpdf(distfn, arg, distname)
-    if distname != 'boost.beta':  # TODO: figure out why boost.beta not working
-        check_pdf_logpdf_at_endpoints(distfn, arg, distname)
+    check_pdf_logpdf_at_endpoints(distfn, arg, distname)
     check_cdf_logcdf(distfn, arg, distname)
     check_sf_logsf(distfn, arg, distname)
     check_ppf_broadcast(distfn, arg, distname)

@@ -20,7 +20,7 @@ def gen_func_defs_pxd(outfile, max_num_inputs=4):
         template_args = ', '.join(f'T{jj} arg{jj}' for jj in range(1, ii+1))
         template_types = ', '.join(f'T{jj}' for jj in range(1, ii+1))
 
-        # for all the different "overloads", we need to produce a distince Cython reference;
+        # for all the different "overloads", we need to produce a distinct Cython reference;
         # assumes that all number template types are the same, i.e. RealType == T1 == T2 == etc
         for func in x_funcs:
             fname = f'boost_{func}'
@@ -29,9 +29,12 @@ def gen_func_defs_pxd(outfile, max_num_inputs=4):
             fname = f'boost_{func}'
             contents += f'    RealType {fname}{ii} "{fname}" [Dist, RealType, {template_types}]({template_args})\n'
 
+    # patch for boost::math::beta_distibution x=1, beta<1
+    contents += f'    RealType boost_pdf_beta2 "boost_pdf_beta" [Dist, RealType, T1, T2](RealType x, T1 a, T2 b)'
+
     with open(outfile, 'w') as fp:
         fp.write(contents)
 
 
 if __name__ == '__main__':
-    gen_func_defs_pxd()
+    pass
