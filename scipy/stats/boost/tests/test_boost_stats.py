@@ -1,12 +1,6 @@
 '''Boost stats tests.'''
 
 import numpy as np
-from scipy.stats import (
-    beta as scipy_beta,
-    nbinom as scipy_nbinom,
-    binom as scipy_binom,
-    ncx2 as scipy_ncx2,
-)
 from scipy.stats.boost import (
     beta as boost_beta,
     nbinom as boost_nbinom,
@@ -52,26 +46,21 @@ def test_issue_12796():
 
 def test_issue_10317():
     alpha, n, p = 0.9, 10, 1
-    assert scipy_nbinom.interval(alpha=alpha, n=n, p=p) != (0, 0)
     assert boost_nbinom.interval(alpha=alpha, n=n, p=p) == (0, 0)
 
 def test_issue_11134():
     alpha, n, p = 0.95, 10, 0
-    assert scipy_binom.interval(alpha=alpha, n=n, p=p) != (0, 0)
     assert boost_binom.interval(alpha=alpha, n=n, p=p) == (-1, 0)
 
-def test_issue_11777():
-    df, nc = 6700, 5300
-    n = 100
-    s = scipy_ncx2(df, nc)
-    b = boost_ncx2(df, nc)
-    assert not all(s.pdf(np.linspace(s.ppf(0.001), s.ppf(0.999), num=n)) > 0)
-    assert all(b.pdf(np.linspace(b.ppf(0.001), b.ppf(0.999), num=n)) > 0)
-
 def test_issue_7406():
-    assert not scipy_binom.ppf(0.5, 0, 0.5) == 0
     assert boost_binom.ppf(0.5, 0, 0.5) == 0
 
 def test_binom_ppf_endpoints():
     assert boost_binom.ppf(0, 0, 0.5) == -1
     assert boost_binom.ppf(1, 0, 0.5) == 0
+
+def test_issue_11777():
+    df, nc = 6700, 5300
+    n = 100
+    b = boost_ncx2(df, nc)
+    assert all(b.pdf(np.linspace(b.ppf(0.001), b.ppf(0.999), num=n)) > 0)
