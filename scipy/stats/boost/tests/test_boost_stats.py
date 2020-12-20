@@ -67,3 +67,11 @@ def test_issue_12796():
                   99981]))
     assert not all(np.diff(scipy_beta(a, b).ppf(q)) > 0)
     assert all(np.diff(boost_beta(a, b).ppf(q)) > 0)
+
+def test_issue_7406():
+    assert not scipy_binom.ppf(0.5, 0, 0.5) == 0
+    assert boost_binom.ppf(0.5, 0, 0.5) == 0
+
+def test_binom_ppf_endpoints():
+    assert boost_binom.ppf(0, 0, 0.5) == -1
+    assert boost_binom.ppf(1, 0, 0.5) == 0
