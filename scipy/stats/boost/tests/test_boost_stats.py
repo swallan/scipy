@@ -60,6 +60,22 @@ def test_binom_ppf_endpoints():
     assert boost_binom.ppf(0, 0, 0.5) == -1
     assert boost_binom.ppf(1, 0, 0.5) == 0
 
+def test_issue_5122():
+    p = 0
+    n = np.random.randint(100, size=10)
+
+    x = 0
+    ppf = boost_binom.ppf(x, n, p)
+    assert np.all(ppf == -1)
+
+    x = np.linspace(0.01, 0.99, 10)
+    ppf = boost_binom.ppf(x, n, p)
+    assert np.all(ppf == 0)
+
+    x = 1
+    ppf = boost_binom.ppf(x, n, p)
+    assert np.all(ppf == n)
+
 def test_issue_11777():
     df, nc = 6700, 5300
     n = 100
