@@ -51,7 +51,7 @@ def test_issue_10317():
 
 def test_issue_11134():
     alpha, n, p = 0.95, 10, 0
-    assert boost_binom.interval(alpha=alpha, n=n, p=p) == (-1, 0)
+    assert boost_binom.interval(alpha=alpha, n=n, p=p) == (0, 0)
 
 def test_issue_7406():
     np.random.seed(0)
