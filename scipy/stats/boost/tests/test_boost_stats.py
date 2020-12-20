@@ -2,6 +2,7 @@
 
 import pytest
 import numpy as np
+import scipy.stats
 from scipy.stats.boost import (
     beta as boost_beta,
     nbinom as boost_nbinom,
@@ -104,7 +105,9 @@ def test_issue_5503pt3():
     assert np.allclose(boost_binom.cdf(2, 10**12, 10**-12), 0.91969860292869777384)
 
 def test_issue_11777():
+    # Compare ncx2 to the gaussian approximation
     df, nc = 6700, 5300
-    n = 100
-    b = boost_ncx2(df, nc)
-    assert all(b.pdf(np.linspace(b.ppf(0.001), b.ppf(0.999), num=n)) > 0)
+    dist = boost_ncx2(df, nc)
+    approx = scipy.stats.norm(df+nc, np.sqrt(2*df+4*nc))
+    x = np.linspace(dist.ppf(0.001), dist.ppf(0.999), num=100)
+    assert np.allclose(dist.pdf(x), approx.pdf(x), atol=1e-4)
