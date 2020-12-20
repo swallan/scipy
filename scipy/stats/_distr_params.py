@@ -138,7 +138,6 @@ distdiscrete = [
     ['nhypergeom', (20, 7, 1)],
 
     # Boost variants
-    ['boost.bernoulli',(0.3,)],
     ['boost.binom', (5, 0.4)],
     ['boost.nbinom', (5, 0.5)],
     ['boost.nbinom', (0.4, 0.4)],  # from tickets: 583

@@ -2,27 +2,17 @@
 
 import numpy as np
 from scipy.stats import (
-    bernoulli as scipy_bernoulli,
     beta as scipy_beta,
     nbinom as scipy_nbinom,
     binom as scipy_binom,
     ncx2 as scipy_ncx2,
 )
 from scipy.stats.boost import (
-    bernoulli as boost_bernoulli,
     beta as boost_beta,
     nbinom as boost_nbinom,
     binom as boost_binom,
     ncx2 as boost_ncx2,
 )
-
-
-def test_issue_11026():
-    p = 0.5
-    assert boost_bernoulli(p).median() == 0
-    assert boost_bernoulli(p).interval(1) == scipy_bernoulli(p).interval(1)
-    assert boost_bernoulli(p).interval(0.999) == scipy_bernoulli(p).interval(0.999)
-    assert boost_bernoulli(p).interval(1-1e-14) == scipy_bernoulli(p).interval(1-1e-14)
 
 def test_issue_12635():
     p = 0.9999999999997369
@@ -47,7 +37,7 @@ def test_issue_10317():
 def test_issue_11134():
     alpha, n, p = 0.95, 10, 0
     assert scipy_binom.interval(alpha=alpha, n=n, p=p) != (0, 0)
-    assert boost_binom.interval(alpha=alpha, n=n, p=p) == (0, 0)
+    assert boost_binom.interval(alpha=alpha, n=n, p=p) == (-1, 0)
 
 def test_issue_11777():
     df, nc = 6700, 5300

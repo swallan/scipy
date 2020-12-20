@@ -9,7 +9,6 @@ class _KlassMap(NamedTuple):
 # map boost stats classes to scipy class names and number of
 # constructor arguments; b -> (s, #)
 _klass_mapper = {
-    'bernoulli': _KlassMap('bernoulli', ('p')),
     'beta': _KlassMap('beta', ('a', 'b')),
     'binomial': _KlassMap('binom', ('n', 'p')),
     'negative_binomial': _KlassMap('nbinom', ('n', 'p')),
