@@ -53,7 +53,8 @@ def test_issue_11134():
     assert boost_binom.interval(alpha=alpha, n=n, p=p) == (-1, 0)
 
 def test_issue_7406():
-    assert boost_binom.ppf(0.5, 0, 0.5) == 0
+    np.random.seed(0)
+    assert np.all(boost_binom.ppf(np.random.rand(10), 0, 0.5) == 0)
 
 def test_binom_ppf_endpoints():
     assert boost_binom.ppf(0, 0, 0.5) == -1
