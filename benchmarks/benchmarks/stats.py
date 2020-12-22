@@ -5,8 +5,9 @@ from .common import Benchmark, safe_import
 
 with safe_import():
     import scipy.stats as stats
+    import scipy.stats.boost as boost
 with safe_import():
-    from scipy.stats._distr_params import distcont
+    from scipy.stats._distr_params import distcont, distdiscrete
 
 try:  # builtin lib
     from itertools import compress
@@ -58,7 +59,7 @@ class InferentialStats(Benchmark):
 
 class Distribution(Benchmark):
     # add distributions here
-    dists = ['cauchy', 'gamma', 'beta']
+    dists = ['beta', 'boost.beta', 'binom', 'boost.binom', 'nbinom', 'boost.nbinom', 'ncx2', 'boost.ncx2', 'cauchy', 'gamma', ]
 
     param_names = ['distribution', 'properties']
     params = [
@@ -66,19 +67,34 @@ class Distribution(Benchmark):
                 'ppf', 'isf', 'moment', 'stats', 'entropy', 'median', 'mean',
                 'var', 'std']
     ]
-    distcont = dict(distcont)
+    distcont = dict(distcont + distdiscrete)
     # maintain previous benchmarks' values
     custom_input = {'gamma': [5], 'beta': [5, 3]}
 
     def setup(self, distribution, properties):
-        self.method = getattr(getattr(stats, distribution), properties)
+        try: 
+            if distribution.startswith('boost'):
+                self.dist = getattr(boost, distribution[6:])
+                self.method = getattr(self.dist, properties)
+            else:
+                self.dist = getattr(stats, distribution)
+                self.method = getattr(self.dist, properties)
+        except AttributeError as e:
+            raise NotImplementedError("This attribute is not a member "
+                                      "of the distribution")
+      
         x = np.random.rand(100)
         shapes = self.distcont[distribution]
         args = [x, *self.custom_input.get(distribution, shapes)]
-        names = ['loc', 'scale']
-        values = [4, 10]
-        kwds = dict(zip(names, values))
 
+        if isinstance(self.dist, stats.rv_discrete):
+            self.isCont = False
+            kwds = {'loc': 4}
+        else: 
+            self.isCont = True
+            kwds = {'loc': 4, 'scale': 10}
+
+        
         if properties == 'fit':
             # provide only the data to fit in args
             self.args = args[:1]
