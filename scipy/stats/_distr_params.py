@@ -108,7 +108,12 @@ distcont = [
     ['wald', ()],
     ['weibull_max', (2.8687961709100187,)],
     ['weibull_min', (1.7866166930421596,)],
-    ['wrapcauchy', (0.031071279018614728,)]]
+    ['wrapcauchy', (0.031071279018614728,)],
+
+    # Boost variants
+    ['boost.beta', (2.3098496451481823, 0.62687954300963677)],
+    ['boost.ncx2', (21, 1.0560465975116415)],
+]
 
 
 distdiscrete = [
@@ -130,5 +135,10 @@ distdiscrete = [
     ['skellam', (15, 8)],
     ['zipf', (6.5,)],
     ['yulesimon', (11.0,)],
-    ['nhypergeom', (20, 7, 1)]
+    ['nhypergeom', (20, 7, 1)],
+
+    # Boost variants
+    ['boost.binom', (5, 0.4)],
+    ['boost.nbinom', (5, 0.5)],
+    ['boost.nbinom', (0.4, 0.4)],  # from tickets: 583
 ]

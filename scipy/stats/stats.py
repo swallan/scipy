@@ -4844,9 +4844,9 @@ def _perm_test(x, y, stat, reps=1000, workers=-1, random_state=None):
                      size=4, dtype=np.uint32)) for _ in range(reps)]
 
     # parallelizes with specified workers over number of reps and set seeds
-    mapwrapper = MapWrapper(workers)
     parallelp = _ParallelP(x=x, y=y, random_states=random_states)
-    null_dist = np.array(list(mapwrapper(parallelp, range(reps))))
+    with MapWrapper(workers) as mapwrapper:
+        null_dist = np.array(list(mapwrapper(parallelp, range(reps))))
 
     # calculate p-value and significant permutation map through list
     pvalue = (null_dist >= stat).sum() / reps
@@ -6900,7 +6900,11 @@ def _parse_kstest_args(data1, data2, args, N):
         rvsfunc = data1
 
     if isinstance(data2, str):
-        cdf = getattr(distributions, data2).cdf
+        try:
+            cdf = getattr(distributions, data2).cdf
+        except AttributeError:
+            import scipy.stats.boost
+            cdf = getattr(scipy.stats.boost, data2[len('boost.'):]).cdf
         data2 = None
     elif callable(data2):
         cdf = data2
