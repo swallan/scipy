@@ -65,7 +65,7 @@ class Distribution(Benchmark):
     params = [
         dists, ['pdf', 'logpdf', 'cdf', 'logcdf', 'rvs', 'fit', 'sf', 'logsf',
                 'ppf', 'isf', 'moment', 'stats', 'entropy', 'median', 'mean',
-                'var', 'std']
+                'var', 'std', 'interval', 'expect']
     ]
     distcont = dict(distcont + distdiscrete)
     # maintain previous benchmarks' values
@@ -83,9 +83,8 @@ class Distribution(Benchmark):
             raise NotImplementedError("This attribute is not a member "
                                       "of the distribution")
       
-        x = np.random.rand(100)
-        shapes = self.distcont[distribution]
-        args = [x, *self.custom_input.get(distribution, shapes)]
+        shapes = self.distcont[distribution]        
+        
 
         if isinstance(self.dist, stats.rv_discrete):
             self.isCont = False
@@ -94,6 +93,9 @@ class Distribution(Benchmark):
             self.isCont = True
             kwds = {'loc': 4, 'scale': 10}
 
+        rng = self.dist.interval(.99, *shapes, **kwds)
+        x = np.linspace(*rng, 100)
+        args = [x, *self.custom_input.get(distribution, shapes)]
         
         if properties == 'fit':
             # provide only the data to fit in args
@@ -113,6 +115,11 @@ class Distribution(Benchmark):
             self.kwds = kwds
         elif properties in ['entropy', 'median', 'mean', 'var', 'std']:
             self.args = args[1:]
+        elif properties == 'expect':
+            self.args = []
+            kwds['args'] = tuple(args[1:])
+        elif properties == 'interval':
+            self.args = [.99, *args[1:]]
         else:
             self.args = [*args]
         self.kwds = kwds
