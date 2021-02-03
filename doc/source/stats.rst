@@ -1,6 +1,10 @@
 .. automodule:: scipy.stats
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
 
 .. toctree::
    :hidden:
-   
-   scipy.stats.mstats
+
+   stats.mstats
+   stats.qmc
